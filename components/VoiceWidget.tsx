@@ -43,7 +43,7 @@ const LONDON_TOOLS = [
     type: 'function' as const,
     name: 'search_thorney_island',
     description: 'Search the Thorney Island book - Vic\'s comprehensive guide to the hidden island beneath Westminster. Use this for questions about Thorney Island, Westminster Abbey, River Tyburn, the Devil\'s Acre, William Caxton, medieval Westminster, the Gatehouse prison, King Cnut, Edward the Confessor, and related topics.',
-    parameters: '{ "type": "object", "required": ["query"], "properties": { "query": { "type": "string", "description": "Search term like Tyburn, Westminster, Devil\\'s Acre, Caxton, monastery, etc" } } }',
+    parameters: '{ "type": "object", "required": ["query"], "properties": { "query": { "type": "string", "description": "Search term like Tyburn, Westminster, Caxton, monastery, etc" } } }',
     fallback_content: 'Unable to search the Thorney Island knowledge base at the moment.',
   },
   {
