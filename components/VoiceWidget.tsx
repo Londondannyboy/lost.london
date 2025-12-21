@@ -15,21 +15,22 @@ interface Article {
 
 // Article card shown within conversation
 function ArticleCard({ article }: { article: Article }) {
+  // Generate slug from title if not available
+  const slug = article.url?.split('/').filter(Boolean).pop() || article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
   return (
     <a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block bg-london-900/80 rounded-xl border border-london-700 p-4 mt-3 max-w-md hover:border-gold-500 transition-all group"
+      href={`/article/${slug}`}
+      className="block bg-white border border-gray-200 p-4 mt-3 max-w-md hover:border-black transition-all group"
     >
-      <h4 className="font-semibold text-white text-sm group-hover:text-gold-400 transition-colors line-clamp-2">
+      <h4 className="font-serif font-bold text-black text-sm group-hover:underline line-clamp-2">
         {article.title}
       </h4>
-      <p className="text-xs text-london-300 mt-1">By {article.author}</p>
+      <p className="text-xs text-gray-500 mt-1">By {article.author}</p>
       {article.excerpt && (
-        <p className="text-xs text-london-400 mt-2 line-clamp-3">{article.excerpt}</p>
+        <p className="text-xs text-gray-600 mt-2 line-clamp-3">{article.excerpt}</p>
       )}
-      <span className="inline-block mt-2 text-xs text-gold-500 group-hover:text-gold-400">
+      <span className="inline-block mt-2 text-xs text-gray-700 group-hover:text-black">
         Read full article →
       </span>
     </a>
@@ -265,35 +266,26 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
     <div className="flex flex-col items-center">
       {/* VIC Avatar - Main Tap Target */}
       <div className="relative mb-8">
-        {/* London blue glow - pulsating when idle */}
+        {/* Black pulse - when idle */}
         {!isConnected && !isConnecting && (
           <>
             <div
-              className="absolute inset-0 rounded-full animate-[divine-pulse_3s_ease-in-out_infinite]"
-              style={{
-                background: 'radial-gradient(circle, rgba(41,82,204,0.5) 0%, rgba(41,82,204,0) 70%)',
-                transform: 'scale(1.25)',
-                filter: 'blur(20px)',
-              }}
-            />
-            <div
               className="absolute inset-0 rounded-full animate-[ping_3s_ease-in-out_infinite]"
               style={{
-                border: '2px solid rgba(41,82,204,0.4)',
+                border: '2px solid rgba(0,0,0,0.3)',
                 transform: 'scale(1.1)',
               }}
             />
           </>
         )}
 
-        {/* Active golden aura - when connected */}
+        {/* Active pulse - when connected */}
         {isConnected && (
           <div
-            className="absolute inset-0 rounded-full animate-[rotate-shine_4s_linear_infinite]"
+            className="absolute inset-0 rounded-full animate-[ping_2s_ease-in-out_infinite]"
             style={{
-              background: 'conic-gradient(from 0deg, transparent 0deg, rgba(212,165,10,0.6) 60deg, rgba(245,197,24,0.9) 120deg, rgba(212,165,10,0.6) 180deg, transparent 240deg, transparent 360deg)',
-              transform: 'scale(1.15)',
-              filter: 'blur(4px)',
+              border: '3px solid rgba(0,0,0,0.5)',
+              transform: 'scale(1.1)',
             }}
           />
         )}
@@ -305,13 +297,13 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
           className="relative z-10 group focus:outline-none"
           aria-label={isConnected ? "End conversation with VIC" : "Tap to speak with VIC about London"}
         >
-          <div className={`relative w-64 h-64 md:w-72 md:h-72 lg:w-80 lg:h-80 rounded-full overflow-hidden ${
+          <div className={`relative w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full overflow-hidden transition-all duration-300 ${
             isConnected
-              ? 'shadow-[0_0_60px_rgba(212,165,10,0.9)]'
-              : 'shadow-[0_0_40px_rgba(41,82,204,0.5)] group-hover:shadow-[0_0_70px_rgba(41,82,204,0.8)]'
-          } transition-all duration-300`}
+              ? 'shadow-xl'
+              : 'shadow-lg group-hover:shadow-xl'
+          }`}
             style={{
-              border: isConnected ? '3px solid rgba(212,165,10,0.8)' : '3px solid rgba(41,82,204,0.8)',
+              border: isConnected ? '4px solid black' : '3px solid black',
             }}
           >
             {/* VIC Avatar Image */}
@@ -325,22 +317,17 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
 
             {/* Overlay with name when not connected */}
             {!isConnected && (
-              <div className="absolute inset-0 bg-gradient-to-t from-london-950/80 via-transparent to-transparent flex flex-col items-center justify-end pb-4">
-                <span className="text-white font-serif font-bold text-2xl tracking-wider">VIC</span>
-                <span className="text-london-300/70 text-xs italic">(pronounced "Fik")</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col items-center justify-end pb-4">
+                <span className="text-white font-serif font-bold text-xl tracking-wider">VIC</span>
+                <span className="text-white/60 text-xs italic">(pronounced "Fik")</span>
               </div>
-            )}
-
-            {/* Speaking glow */}
-            {isPlaying && (
-              <div className="absolute inset-0 rounded-full animate-[speaking-glow_1.5s_ease-in-out_infinite] pointer-events-none" />
             )}
           </div>
 
           {/* Connecting spinner */}
           {isConnecting && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 border-4 border-london-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-12 h-12 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
             </div>
           )}
         </button>
@@ -350,12 +337,12 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
       <button
         onClick={isConnected ? handleDisconnect : handleConnect}
         disabled={isConnecting}
-        className={`mb-4 px-8 py-3 rounded-full font-semibold text-base transition-all duration-300 flex items-center gap-2 ${
+        className={`mb-4 px-8 py-3 rounded-none font-serif font-bold text-base transition-all duration-300 flex items-center gap-2 border-2 ${
           isConnected
-            ? 'bg-gold-500 text-black hover:bg-gold-400 shadow-[0_0_20px_rgba(212,165,10,0.4)]'
+            ? 'bg-black text-white border-black hover:bg-gray-800'
             : isConnecting
-            ? 'bg-gold-400 text-black cursor-wait shadow-[0_0_15px_rgba(212,165,10,0.3)]'
-            : 'bg-gold-500 text-black hover:bg-gold-400 hover:shadow-[0_0_30px_rgba(212,165,10,0.6)] shadow-[0_0_15px_rgba(212,165,10,0.3)]'
+            ? 'bg-gray-200 text-gray-600 border-gray-300 cursor-wait'
+            : 'bg-black text-white border-black hover:bg-gray-800'
         }`}
       >
         {isConnecting ? (
@@ -381,16 +368,16 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
       </button>
 
       {/* Waveform Animation */}
-      <div className="flex items-center justify-center gap-[2px] h-12 w-64 mb-4">
+      <div className="flex items-center justify-center gap-[2px] h-10 w-48 mb-4">
         {waveHeights.map((height, i) => (
           <div
             key={i}
-            className={`w-[3px] rounded-full transition-all duration-100 ${
+            className={`w-[2px] rounded-full transition-all duration-100 ${
               isPlaying
-                ? 'bg-gold-400 shadow-[0_0_8px_rgba(212,165,10,0.6)]'
+                ? 'bg-black'
                 : isConnected
-                ? 'bg-gold-500'
-                : 'bg-london-400'
+                ? 'bg-gray-700'
+                : 'bg-gray-400'
             }`}
             style={{
               height: `${isPlaying ? Math.min(height * 1.3, 100) : height}%`,
@@ -402,8 +389,8 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
 
       {/* Status Text - clickable when not connected */}
       {isConnected || isConnecting ? (
-        <p className={`text-lg md:text-xl font-medium mb-4 text-center transition-all ${
-          isPlaying ? 'text-gold-300' : 'text-london-300'
+        <p className={`text-base md:text-lg font-serif mb-4 text-center transition-all ${
+          isPlaying ? 'text-black font-semibold' : 'text-gray-600'
         }`}>
           {isConnecting
             ? "Connecting to VIC..."
@@ -414,8 +401,8 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
       ) : (
         <button
           onClick={handleConnect}
-          className={`text-lg md:text-xl font-medium mb-4 text-center transition-all cursor-pointer hover:text-gold-400 ${
-            isError ? 'text-red-400' : 'text-london-300'
+          className={`text-base md:text-lg font-serif mb-4 text-center transition-all cursor-pointer hover:text-black ${
+            isError ? 'text-red-600' : 'text-gray-600'
           }`}
         >
           {isError
@@ -427,41 +414,39 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
       {/* Featured Article - appears when VIC finds one */}
       {isConnected && featuredArticle && (
         <div className="w-full max-w-md mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <p className="text-gold-400 text-xs font-medium text-center mb-3">VIC Found This</p>
+          <p className="text-gray-500 text-xs font-medium text-center mb-3 uppercase tracking-wide">VIC Found This</p>
           <ArticleCard article={featuredArticle} />
         </div>
       )}
 
       {/* Topics VIC can discuss - always visible */}
       <div className="text-center mb-6 w-full max-w-lg">
-        <p className="text-white/70 text-sm mb-3">
+        <p className="text-gray-600 text-sm mb-3 font-serif">
           {isConnected ? "Ask VIC about any of these topics:" : "Topics VIC can tell you about:"}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           {[
             'Shakespeare',
-            'Medieval London',
-            'Tudor History',
+            'Medieval',
+            'Tudor',
             'Hidden Rivers',
-            'Roman London',
-            'Victorian Era',
+            'Roman',
+            'Victorian',
             'Hidden Gems',
-            'Art & Culture',
-            'London Bridges',
-            'Parks & Gardens',
-            'Churches',
-            'Transport',
+            'Art',
+            'Bridges',
+            'Gardens',
           ].map((topic) => (
             <span
               key={topic}
-              className="px-3 py-1 text-xs bg-london-800/60 text-white/80 rounded-full border border-london-600/30"
+              className="px-3 py-1 text-xs bg-white text-gray-700 border border-gray-300 hover:border-black hover:text-black transition-colors cursor-default"
             >
               {topic}
             </span>
           ))}
         </div>
-        <p className="text-white/50 text-xs mt-3">
-          372 articles • Click "Speak to VIC" to start exploring
+        <p className="text-gray-400 text-xs mt-3">
+          372 articles available
         </p>
       </div>
     </div>
@@ -490,7 +475,7 @@ export function VoiceWidget() {
   if (error) {
     return (
       <div className="text-center py-20">
-        <p className="text-london-400">{error}</p>
+        <p className="text-gray-500 font-serif">{error}</p>
       </div>
     )
   }
@@ -498,8 +483,8 @@ export function VoiceWidget() {
   if (!accessToken) {
     return (
       <div className="text-center py-20">
-        <div className="w-10 h-10 border-2 border-london-700 border-t-london-400 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-london-400">Loading VIC...</p>
+        <div className="w-10 h-10 border-2 border-gray-200 border-t-black rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-500 font-serif">Loading VIC...</p>
       </div>
     )
   }

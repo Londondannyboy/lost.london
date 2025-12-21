@@ -35,12 +35,12 @@ export function FeaturedArticles() {
     return (
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-london-900/50 rounded-xl overflow-hidden animate-pulse">
-            <div className="aspect-video bg-london-800/50" />
+          <div key={i} className="bg-gray-100 animate-pulse">
+            <div className="aspect-video bg-gray-200" />
             <div className="p-4 space-y-3">
-              <div className="h-4 bg-london-800/50 rounded w-3/4" />
-              <div className="h-3 bg-london-800/50 rounded w-full" />
-              <div className="h-3 bg-london-800/50 rounded w-2/3" />
+              <div className="h-4 bg-gray-200 w-3/4" />
+              <div className="h-3 bg-gray-200 w-full" />
+              <div className="h-3 bg-gray-200 w-2/3" />
             </div>
           </div>
         ))}
@@ -53,10 +53,8 @@ export function FeaturedArticles() {
       {articles.map((article) => (
         <a
           key={article.id}
-          href={article.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group bg-london-900/60 rounded-xl overflow-hidden border border-london-700/30 hover:border-gold-500/50 transition-all hover:shadow-[0_0_30px_rgba(212,165,10,0.15)]"
+          href={`/article/${article.slug}`}
+          className="group bg-white border border-gray-200 hover:border-black transition-all"
         >
           <div className="aspect-video overflow-hidden">
             <img
@@ -69,15 +67,15 @@ export function FeaturedArticles() {
             />
           </div>
           <div className="p-4">
-            <h3 className="font-semibold text-white text-sm mb-2 line-clamp-2 group-hover:text-gold-400 transition-colors">
+            <h3 className="font-serif font-bold text-black text-sm mb-2 line-clamp-2 group-hover:underline">
               {article.title}
             </h3>
             {article.excerpt && (
-              <p className="text-white/60 text-xs line-clamp-2 mb-3">
+              <p className="text-gray-600 text-xs line-clamp-2 mb-3">
                 {article.excerpt}
               </p>
             )}
-            <span className="text-gold-400 text-xs font-medium group-hover:text-gold-300">
+            <span className="text-gray-500 text-xs group-hover:text-black">
               Read article →
             </span>
           </div>
