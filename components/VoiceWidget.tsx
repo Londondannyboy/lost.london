@@ -232,6 +232,7 @@ Remember: You are sharing YOUR work, YOUR discoveries, YOUR passion for London h
         auth: { type: 'accessToken', value: accessToken },
         configId: configId,
         sessionSettings: {
+          type: 'session_settings' as const,
           systemPrompt,
           tools: LONDON_TOOLS,
         }
