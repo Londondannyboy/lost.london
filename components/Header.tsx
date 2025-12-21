@@ -47,6 +47,16 @@ export function Header() {
             {session?.user ? (
               <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/20">
                 <Link
+                  href="/my-london"
+                  className={`px-3 py-2 text-sm transition-colors ${
+                    pathname === '/my-london'
+                      ? 'text-white bg-white/10'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  My London
+                </Link>
+                <Link
                   href="/bookmarks"
                   className={`px-3 py-2 text-sm transition-colors ${
                     pathname === '/bookmarks'
@@ -134,6 +144,17 @@ export function Header() {
                 {session?.user ? (
                   <>
                     <Link
+                      href="/my-london"
+                      className={`block px-4 py-3 text-base ${
+                        pathname === '/my-london'
+                          ? 'text-white bg-white/10'
+                          : 'text-gray-300 hover:text-white hover:bg-white/5'
+                      }`}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      My London
+                    </Link>
+                    <Link
                       href="/bookmarks"
                       className={`block px-4 py-3 text-base ${
                         pathname === '/bookmarks'
@@ -142,7 +163,7 @@ export function Header() {
                       }`}
                       onClick={() => setMenuOpen(false)}
                     >
-                      My Bookmarks
+                      Bookmarks
                     </Link>
                     <div className="px-4 py-3 flex items-center justify-between">
                       <span className="text-sm text-gray-300">{session.user.email}</span>
