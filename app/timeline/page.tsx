@@ -1,5 +1,6 @@
 import { getEraStats, getArticlesByEra } from '@/lib/db'
 import { Header } from '@/components/Header'
+import { TimelineVoiceSection } from '@/components/TimelineVoiceSection'
 import Link from 'next/link'
 
 export const metadata = {
@@ -128,6 +129,18 @@ export default async function TimelinePage({
         {/* Articles for selected era */}
         {selectedEra && articles.length > 0 && (
           <div className="mt-12">
+            {/* VIC Voice Widget for this era */}
+            <div className="mb-8">
+              <TimelineVoiceSection
+                era={selectedEra}
+                eraInfo={ERA_INFO[selectedEra]}
+                articles={articles.map(a => ({
+                  title: a.title,
+                  excerpt: a.excerpt || ''
+                }))}
+              />
+            </div>
+
             <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">
               {selectedEra} Era Articles
               <span className="text-gray-500 text-lg font-normal ml-2">({articles.length})</span>

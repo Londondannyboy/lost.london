@@ -12,6 +12,7 @@ export function Header() {
 
   const navLinks = [
     { href: '/', label: 'Talk to VIC' },
+    { href: '/thorney-island', label: 'Thorney Island' },
     { href: '/series/lost-london', label: 'Articles' },
     { href: '/timeline', label: 'Timeline' },
     { href: '/surprise', label: 'Surprise Me' },
