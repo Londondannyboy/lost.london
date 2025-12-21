@@ -30,23 +30,23 @@ export default async function SeriesDetailPage({ params }: Props) {
   const articles = await getArticlesBySeries(series.id)
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-stone-50">
       <Header />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Series header */}
         <div className="mb-8">
-          <Link href="/series" className="text-sm text-gray-500 hover:text-gray-400 mb-4 inline-block">
+          <Link href="/series" className="text-sm text-gray-500 hover:text-red-700 mb-4 inline-block">
             ← Back to series
           </Link>
-          <h1 className="text-3xl font-serif text-white mb-2">{series.name}</h1>
-          <p className="text-gold-400">{articles.length} articles in this series</p>
+          <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">{series.name}</h1>
+          <p className="text-red-700">{articles.length} articles in this series</p>
         </div>
 
         {/* Series description */}
         {series.description && (
-          <div className="article-card p-6 mb-8">
-            <p className="text-gray-300 leading-relaxed">{series.description}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
+            <p className="text-gray-700 leading-relaxed">{series.description}</p>
           </div>
         )}
 
@@ -56,10 +56,10 @@ export default async function SeriesDetailPage({ params }: Props) {
             <Link
               key={article.id}
               href={`/article/${article.slug}`}
-              className="article-card p-4 flex gap-4 items-start group"
+              className="bg-white border border-gray-200 rounded-lg p-4 flex gap-4 items-start group hover:shadow-lg hover:border-red-200 transition-all block"
             >
               {/* Article number */}
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-london-700 flex items-center justify-center text-gold-400 font-bold text-sm">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-700 flex items-center justify-center text-white font-bold text-sm">
                 {article.series_position || index + 1}
               </div>
 
@@ -74,11 +74,11 @@ export default async function SeriesDetailPage({ params }: Props) {
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <h2 className="font-serif text-white group-hover:text-gold-400 transition-colors">
+                    <h2 className="font-serif text-gray-900 group-hover:text-red-700 transition-colors">
                       {article.title}
                     </h2>
                     <p className="text-sm text-gray-500 mt-1">By {article.author}</p>
-                    <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                    <p className="text-sm text-gray-600 mt-2 line-clamp-2">
                       {article.excerpt}
                     </p>
                   </div>
@@ -89,8 +89,8 @@ export default async function SeriesDetailPage({ params }: Props) {
         </div>
 
         {articles.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-400">No articles in this series yet.</p>
+          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <p className="text-gray-600">No articles in this series yet.</p>
           </div>
         )}
       </main>

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@neondatabase/neon-js/ui/tailwind";
+@import "leaflet/dist/leaflet.css";
 
 /* ===========================================
    LONDON VIC - London Heritage Design System
