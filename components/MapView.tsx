@@ -36,17 +36,18 @@ interface MapViewProps {
   articles: Article[]
   selectedEra?: string
   selectedBorough?: string
+  focusCenter?: { lat: number; lng: number }
 }
 
-function MapController({ center }: { center: [number, number] }) {
+function MapController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap()
   useEffect(() => {
-    map.setView(center, map.getZoom())
-  }, [center, map])
+    map.setView(center, zoom)
+  }, [center, zoom, map])
   return null
 }
 
-export function MapView({ articles, selectedEra, selectedBorough }: MapViewProps) {
+export function MapView({ articles, selectedEra, selectedBorough, focusCenter }: MapViewProps) {
   const [mounted, setMounted] = useState(false)
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
 
@@ -58,13 +59,18 @@ export function MapView({ articles, selectedEra, selectedBorough }: MapViewProps
     return true
   }) as (Article & { latitude: number; longitude: number })[]
 
-  // Calculate center from articles or default to central London
-  const center: [number, number] = filteredArticles.length > 0
-    ? [
-        filteredArticles.reduce((sum, a) => sum + a.latitude, 0) / filteredArticles.length,
-        filteredArticles.reduce((sum, a) => sum + a.longitude, 0) / filteredArticles.length
-      ]
-    : [51.5074, -0.1278]
+  // Use focusCenter if provided, otherwise calculate from articles or default to central London
+  const center: [number, number] = focusCenter
+    ? [focusCenter.lat, focusCenter.lng]
+    : filteredArticles.length > 0
+      ? [
+          filteredArticles.reduce((sum, a) => sum + a.latitude, 0) / filteredArticles.length,
+          filteredArticles.reduce((sum, a) => sum + a.longitude, 0) / filteredArticles.length
+        ]
+      : [51.5074, -0.1278]
+
+  // Use higher zoom when focusing on specific location
+  const zoom = focusCenter ? 16 : 12
 
   useEffect(() => {
     setMounted(true)
@@ -82,7 +88,7 @@ export function MapView({ articles, selectedEra, selectedBorough }: MapViewProps
     <div className="relative w-full h-full">
       <MapContainer
         center={center}
-        zoom={12}
+        zoom={zoom}
         className="w-full h-full"
         style={{ background: '#0a0e14' }}
       >
@@ -90,7 +96,7 @@ export function MapView({ articles, selectedEra, selectedBorough }: MapViewProps
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        <MapController center={center} />
+        <MapController center={center} zoom={zoom} />
 
         {filteredArticles.map((article) => (
           <Marker

@@ -30,9 +30,10 @@ interface MapPageClientProps {
   selectedBorough?: string
   eras: string[]
   boroughs: string[]
+  focusCenter?: { lat: number; lng: number }
 }
 
-export function MapPageClient({ articles, selectedEra, selectedBorough, eras, boroughs }: MapPageClientProps) {
+export function MapPageClient({ articles, selectedEra, selectedBorough, eras, boroughs, focusCenter }: MapPageClientProps) {
   return (
     <div className="flex-1 flex flex-col md:flex-row">
       {/* Filters Sidebar */}
@@ -107,6 +108,7 @@ export function MapPageClient({ articles, selectedEra, selectedBorough, eras, bo
           articles={articles}
           selectedEra={selectedEra}
           selectedBorough={selectedBorough}
+          focusCenter={focusCenter}
         />
       </main>
     </div>
