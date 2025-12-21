@@ -283,14 +283,31 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
     <div className="flex flex-col items-center">
       {/* VIC Avatar - Main Tap Target */}
       <div className="relative mb-8">
-        {/* Black pulse - when idle */}
+        {/* Glowing rings - always visible, more intense when idle */}
         {!isConnected && !isConnecting && (
           <>
+            {/* Outer glow ring */}
+            <div
+              className="absolute inset-0 rounded-full animate-[pulse_2s_ease-in-out_infinite]"
+              style={{
+                background: 'radial-gradient(circle, rgba(220,38,38,0.3) 0%, transparent 70%)',
+                transform: 'scale(1.4)',
+              }}
+            />
+            {/* Inner pulse ring */}
             <div
               className="absolute inset-0 rounded-full animate-[ping_3s_ease-in-out_infinite]"
               style={{
-                border: '2px solid rgba(0,0,0,0.3)',
-                transform: 'scale(1.1)',
+                border: '3px solid rgba(220,38,38,0.5)',
+                transform: 'scale(1.15)',
+              }}
+            />
+            {/* Second pulse ring - offset timing */}
+            <div
+              className="absolute inset-0 rounded-full animate-[ping_3s_ease-in-out_infinite_1.5s]"
+              style={{
+                border: '2px solid rgba(220,38,38,0.3)',
+                transform: 'scale(1.25)',
               }}
             />
           </>
@@ -298,91 +315,126 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
 
         {/* Active pulse - when connected */}
         {isConnected && (
+          <>
+            <div
+              className="absolute inset-0 rounded-full animate-[ping_2s_ease-in-out_infinite]"
+              style={{
+                border: '3px solid rgba(34,197,94,0.6)',
+                transform: 'scale(1.15)',
+              }}
+            />
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(34,197,94,0.2) 0%, transparent 70%)',
+                transform: 'scale(1.3)',
+              }}
+            />
+          </>
+        )}
+
+        {/* Speaking glow - when VIC is talking */}
+        {isPlaying && (
           <div
-            className="absolute inset-0 rounded-full animate-[ping_2s_ease-in-out_infinite]"
+            className="absolute inset-0 rounded-full animate-[pulse_0.5s_ease-in-out_infinite]"
             style={{
-              border: '3px solid rgba(0,0,0,0.5)',
-              transform: 'scale(1.1)',
+              background: 'radial-gradient(circle, rgba(251,191,36,0.4) 0%, transparent 60%)',
+              transform: 'scale(1.5)',
             }}
           />
         )}
 
-        {/* VIC Avatar Button */}
+        {/* VIC Avatar Button - BIGGER */}
         <button
           onClick={isConnected ? handleDisconnect : handleConnect}
           disabled={isConnecting}
-          className="relative z-10 group focus:outline-none"
+          className="relative z-10 group focus:outline-none cursor-pointer"
           aria-label={isConnected ? "End conversation with VIC" : "Tap to speak with VIC about London"}
         >
-          <div className={`relative w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full overflow-hidden transition-all duration-300 ${
+          <div className={`relative w-56 h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 rounded-full overflow-hidden transition-all duration-300 ${
             isConnected
-              ? 'shadow-xl'
-              : 'shadow-lg group-hover:shadow-xl'
+              ? 'shadow-2xl ring-4 ring-green-500/50'
+              : isPlaying
+              ? 'shadow-2xl ring-4 ring-amber-400/50'
+              : 'shadow-xl group-hover:shadow-2xl group-hover:scale-105'
           }`}
             style={{
-              border: isConnected ? '4px solid black' : '3px solid black',
+              border: isConnected ? '4px solid #22c55e' : isPlaying ? '4px solid #fbbf24' : '4px solid #dc2626',
             }}
           >
             {/* VIC Avatar Image */}
             <img
               src="/vic-avatar.jpg"
               alt="VIC - Your London History Guide"
-              className={`w-full h-full object-cover ${
-                isPlaying ? 'animate-[speaking-breathe_2s_ease-in-out_infinite]' : ''
+              className={`w-full h-full object-cover transition-transform ${
+                isPlaying ? 'animate-[pulse_1s_ease-in-out_infinite] scale-105' : ''
               }`}
             />
 
             {/* Overlay with name when not connected */}
-            {!isConnected && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col items-center justify-end pb-4">
-                <span className="text-white font-serif font-bold text-xl tracking-wider">VIC</span>
-                <span className="text-white/60 text-xs italic">(pronounced "Fik")</span>
+            {!isConnected && !isPlaying && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col items-center justify-end pb-6">
+                <span className="text-white font-serif font-bold text-2xl tracking-wider drop-shadow-lg">VIC</span>
+                <span className="text-white/70 text-sm italic">Tap to speak</span>
               </div>
             )}
           </div>
 
           {/* Connecting spinner */}
           {isConnecting && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full">
+              <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin" />
             </div>
           )}
         </button>
       </div>
 
-      {/* Connect/Disconnect Button */}
-      <button
-        onClick={isConnected ? handleDisconnect : handleConnect}
-        disabled={isConnecting}
-        className={`mb-4 px-8 py-3 rounded-none font-serif font-bold text-base transition-all duration-300 flex items-center gap-2 border-2 ${
-          isConnected
-            ? 'bg-black text-white border-black hover:bg-gray-800'
-            : isConnecting
-            ? 'bg-gray-200 text-gray-600 border-gray-300 cursor-wait'
-            : 'bg-black text-white border-black hover:bg-gray-800'
-        }`}
-      >
-        {isConnecting ? (
-          <>
-            <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-            Connecting...
-          </>
-        ) : isConnected ? (
-          <>
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6" y="6" width="12" height="12" rx="2" />
-            </svg>
-            End Conversation
-          </>
-        ) : (
-          <>
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-            Speak to VIC
-          </>
+      {/* Connect/Disconnect Button - with glow */}
+      <div className="relative mb-4">
+        {/* Glow effect behind button when not connected */}
+        {!isConnected && !isConnecting && (
+          <div
+            className="absolute inset-0 rounded-lg animate-[pulse_2s_ease-in-out_infinite] blur-md"
+            style={{
+              background: 'linear-gradient(90deg, #dc2626, #f97316, #dc2626)',
+              transform: 'scale(1.1)',
+            }}
+          />
         )}
-      </button>
+        <button
+          onClick={isConnected ? handleDisconnect : handleConnect}
+          disabled={isConnecting}
+          className={`relative z-10 px-10 py-4 rounded-lg font-serif font-bold text-lg transition-all duration-300 flex items-center gap-3 ${
+            isConnected
+              ? 'bg-gray-800 text-white hover:bg-gray-700 shadow-lg'
+              : isConnecting
+              ? 'bg-gray-300 text-gray-600 cursor-wait'
+              : 'bg-gradient-to-r from-red-600 to-orange-500 text-white hover:from-red-700 hover:to-orange-600 shadow-xl hover:shadow-2xl hover:scale-105'
+          }`}
+        >
+          {isConnecting ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Connecting...
+            </>
+          ) : isConnected ? (
+            <>
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+              </svg>
+              End Conversation
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+              Speak to VIC
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Waveform Animation */}
       <div className="flex items-center justify-center gap-[2px] h-10 w-48 mb-4">
