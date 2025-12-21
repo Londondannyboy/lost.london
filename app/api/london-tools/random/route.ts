@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server'
-import { getRandomArticle } from '@/lib/db'
+import { neon } from '@neondatabase/serverless'
 
 export async function POST() {
   try {
-    const article = await getRandomArticle()
+    const sql = neon(process.env.DATABASE_URL!)
 
-    if (!article) {
+    const articles = await sql`
+      SELECT id, title, slug, url, author, publication_date, content, excerpt, featured_image_url, categories
+      FROM articles
+      ORDER BY RANDOM()
+      LIMIT 1
+    `
+
+    if (articles.length === 0) {
       return NextResponse.json({
         success: false,
         error: 'No articles found',
       })
     }
+
+    const article = articles[0] as any
 
     return NextResponse.json({
       success: true,
@@ -19,8 +28,10 @@ export async function POST() {
         author: article.author,
         publication_date: article.publication_date,
         excerpt: article.excerpt,
-        content: article.content?.substring(0, 1500) + '...',
+        content: article.content?.substring(0, 1500) + (article.content?.length > 1500 ? '...' : ''),
         url: article.url,
+        categories: article.categories || [],
+        featured_image_url: article.featured_image_url,
       },
     })
   } catch (error) {

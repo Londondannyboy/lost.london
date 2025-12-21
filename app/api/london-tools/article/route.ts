@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sql } from '@/lib/db'
+import { neon } from '@neondatabase/serverless'
 
 export async function POST(request: NextRequest) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
     const { title } = await request.json()
 
     if (!title) {
@@ -12,10 +13,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const searchTerm = `%${title}%`
     const articles = await sql`
-      SELECT id, title, slug, url, author, publication_date, content, excerpt, featured_image_url
+      SELECT id, title, slug, url, author, publication_date, content, excerpt, featured_image_url, categories
       FROM articles
-      WHERE title ILIKE ${'%' + title + '%'}
+      WHERE LOWER(title) LIKE LOWER(${searchTerm})
       ORDER BY publication_date DESC NULLS LAST
       LIMIT 1
     `
@@ -27,15 +29,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const article = articles[0]
-
-    // Get categories for this article
-    const categories = await sql`
-      SELECT c.name
-      FROM categories c
-      JOIN article_categories ac ON c.id = ac.category_id
-      WHERE ac.article_id = ${article.id}
-    `
+    const article = articles[0] as any
 
     return NextResponse.json({
       success: true,
@@ -43,10 +37,10 @@ export async function POST(request: NextRequest) {
         title: article.title,
         author: article.author,
         publication_date: article.publication_date,
-        content: article.content?.substring(0, 2000) + '...',
+        content: article.content?.substring(0, 2000) + (article.content?.length > 2000 ? '...' : ''),
         excerpt: article.excerpt,
         url: article.url,
-        categories: categories.map((c) => (c as { name: string }).name),
+        categories: article.categories || [],
         featured_image_url: article.featured_image_url,
       },
     })
