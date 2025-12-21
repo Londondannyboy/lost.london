@@ -252,19 +252,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <article className="lg:col-span-6">
             {/* Lead paragraph - larger */}
             {leadSentence && (
-              <p className="text-xl font-serif text-gray-900 leading-relaxed mb-6 first-letter:text-6xl first-letter:font-bold first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:text-red-700">
-                {leadSentence}
+              <p className="text-xl font-serif text-gray-900 leading-relaxed mb-8">
+                <span className="text-6xl font-bold float-left mr-3 mt-1 text-red-700 leading-none">
+                  {leadSentence.charAt(0)}
+                </span>
+                {leadSentence.slice(1)}
               </p>
             )}
 
             {/* Rest of content */}
             <div
-              className="prose prose-lg max-w-none
-                prose-p:text-gray-800 prose-p:leading-relaxed prose-p:text-justify
-                prose-headings:font-serif prose-headings:text-black
-                prose-a:text-blue-700 prose-a:no-underline hover:prose-a:underline
-                prose-blockquote:border-l-red-700 prose-blockquote:bg-gray-50 prose-blockquote:py-2
-                prose-strong:text-black"
+              className="article-content text-gray-900 text-lg leading-relaxed"
               dangerouslySetInnerHTML={{ __html: formatContent(restContent) }}
             />
           </article>

@@ -1,6 +1,8 @@
 import { VoiceWidget } from '@/components/VoiceWidget'
 import { FeaturedArticles } from '@/components/FeaturedArticles'
 import { SearchBar } from '@/components/SearchBar'
+import { Header } from '@/components/Header'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -11,9 +13,12 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Newspaper Header */}
-      <header className="border-b-4 border-black">
+    <div className="min-h-screen bg-white text-black">
+      {/* Navigation Header */}
+      <Header />
+
+      {/* Newspaper Masthead */}
+      <header className="border-b-4 border-black bg-white">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="text-center">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-black text-black tracking-tight">
@@ -119,6 +124,19 @@ export default function HomePage() {
               Featured Articles
             </h2>
             <FeaturedArticles />
+
+            {/* Load More Articles */}
+            <div className="mt-12 text-center">
+              <Link
+                href="/series/lost-london"
+                className="inline-block bg-black text-white px-8 py-3 font-serif text-lg hover:bg-gray-800 transition-colors"
+              >
+                Browse All Articles →
+              </Link>
+              <p className="mt-3 text-gray-500 text-sm">
+                Explore all 372 articles in the Lost London collection
+              </p>
+            </div>
           </div>
         </section>
 

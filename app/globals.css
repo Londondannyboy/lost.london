@@ -251,3 +251,24 @@ h1, h2 {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Article content styling */
+.article-content {
+  color: #1a1a1a !important;
+}
+
+.article-content p {
+  color: #1a1a1a;
+  margin-bottom: 1.5rem;
+  line-height: 1.8;
+}
+
+.article-content a {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.article-content strong {
+  color: #000;
+  font-weight: 600;
+}
