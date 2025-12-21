@@ -1,6 +1,19 @@
 import { neon } from '@neondatabase/serverless'
 
-export const sql = neon(process.env.DATABASE_URL!)
+// Create a placeholder that will be replaced at runtime
+// This avoids build-time errors when DATABASE_URL is not set
+function createSql(): ReturnType<typeof neon> {
+  if (!process.env.DATABASE_URL) {
+    // Return a function that throws - will only be called at runtime
+    const placeholder = (() => {
+      throw new Error('DATABASE_URL not configured')
+    }) as unknown as ReturnType<typeof neon>
+    return placeholder
+  }
+  return neon(process.env.DATABASE_URL)
+}
+
+export const sql = createSql()
 
 export interface Article {
   id: number
@@ -78,8 +91,8 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     FROM articles
     WHERE slug = ${slug}
     LIMIT 1
-  `
-  return articles[0] as Article || null
+  ` as Article[]
+  return articles[0] || null
 }
 
 export async function getArticlesByCategory(categoryName: string, limit = 5): Promise<Article[]> {
@@ -122,8 +135,8 @@ export async function getRandomArticle(): Promise<Article | null> {
     FROM articles
     ORDER BY RANDOM()
     LIMIT 1
-  `
-  return articles[0] as Article || null
+  ` as Article[]
+  return articles[0] || null
 }
 
 // Location-based queries
@@ -209,8 +222,8 @@ export async function getSeriesBySlug(slug: string): Promise<Series | null> {
     FROM series
     WHERE slug = ${slug}
     LIMIT 1
-  `
-  return series[0] as Series || null
+  ` as Series[]
+  return series[0] || null
 }
 
 export async function getArticlesBySeries(seriesId: number): Promise<Article[]> {
@@ -246,8 +259,8 @@ export async function getRouteBySlug(slug: string): Promise<Route | null> {
     FROM routes
     WHERE slug = ${slug}
     LIMIT 1
-  `
-  return routes[0] as Route || null
+  ` as Route[]
+  return routes[0] || null
 }
 
 export async function getRouteStops(routeId: number): Promise<RouteStop[]> {
@@ -258,7 +271,7 @@ export async function getRouteStops(routeId: number): Promise<RouteStop[]> {
     JOIN articles a ON rs.article_id = a.id
     WHERE rs.route_id = ${routeId}
     ORDER BY rs.stop_order
-  `
+  ` as Record<string, unknown>[]
   return stops.map(stop => ({
     id: stop.id,
     route_id: stop.route_id,

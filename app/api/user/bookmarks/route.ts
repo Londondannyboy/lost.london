@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const result = await sql`
       SELECT bookmarks FROM user_data WHERE user_id = ${user.id}
-    `
+    ` as { bookmarks: number[] }[]
 
     return NextResponse.json({
       success: true,
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     // Get updated bookmarks
     const result = await sql`
       SELECT bookmarks FROM user_data WHERE user_id = ${user.id}
-    `
+    ` as { bookmarks: number[] }[]
 
     return NextResponse.json({
       success: true,
