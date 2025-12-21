@@ -39,8 +39,10 @@ export async function GET(request: NextRequest) {
       results: chunks.map((c: any) => ({
         chunk_number: c.chunk_number,
         content: c.content,
-        // Format content for better readability
+        // Format content for better readability - preserve paragraph breaks
         excerpt: c.content.substring(0, 500) + (c.content.length > 500 ? '...' : ''),
+        // HTML-formatted version for display
+        content_html: c.content.split('\n\n').map((p: string) => `<p>${p}</p>`).join(''),
       })),
     })
   } catch (error) {
@@ -74,6 +76,7 @@ export async function POST(request: NextRequest) {
         chunk_number: c.chunk_number,
         content: c.content,
         excerpt: c.content.substring(0, 500) + (c.content.length > 500 ? '...' : ''),
+        content_html: c.content.split('\n\n').map((p: string) => `<p>${p}</p>`).join(''),
       })),
     })
   } catch (error) {
