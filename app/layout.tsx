@@ -1,17 +1,19 @@
 import type { Metadata } from "next"
 import "./globals.css"
+import { authClient } from '@/lib/auth/client'
+import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui'
 
 export const metadata: Metadata = {
-  title: "VIC | Discover London's Hidden Stories",
-  description: "Talk to VIC, your AI guide to London's hidden history, secret gems, and fascinating stories. Explore 139 articles about London's past and present.",
-  keywords: ["London history", "hidden London", "London walks", "London guide", "AI guide", "VIC"],
-  authors: [{ name: "VIC - London Guide" }],
+  title: "Lost London | Discover London's Hidden Stories",
+  description: "Explore Vic Keegan's Lost London - 372 articles about London's hidden history, secret gems, and fascinating stories. Interactive maps, walking routes, and more.",
+  keywords: ["London history", "hidden London", "London walks", "London guide", "Vic Keegan", "Lost London"],
+  authors: [{ name: "Vic Keegan" }],
   openGraph: {
     type: "website",
     locale: "en_GB",
-    title: "VIC | Discover London's Hidden Stories",
-    description: "Your AI guide to London's hidden history, secret gems, and fascinating walks.",
-    siteName: "VIC London",
+    title: "Lost London | Discover London's Hidden Stories",
+    description: "Explore Vic Keegan's Lost London - interactive maps, walking routes, and fascinating stories.",
+    siteName: "Lost London",
   },
 }
 
@@ -23,7 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased min-h-screen flex flex-col">
-        {children}
+        <NeonAuthUIProvider authClient={authClient} redirectTo="/">
+          {children}
+        </NeonAuthUIProvider>
       </body>
     </html>
   )

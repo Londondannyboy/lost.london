@@ -12,6 +12,45 @@ export interface Article {
   content: string
   excerpt: string
   featured_image_url: string
+  // Location fields
+  latitude?: number
+  longitude?: number
+  location_name?: string
+  borough?: string
+  historical_era?: string
+  year_from?: number
+  year_to?: number
+  // Series fields
+  series_id?: number
+  series_position?: number
+}
+
+export interface Series {
+  id: number
+  name: string
+  slug: string
+  description?: string
+  article_count: number
+}
+
+export interface Route {
+  id: number
+  name: string
+  slug: string
+  description?: string
+  difficulty: 'easy' | 'moderate' | 'challenging'
+  duration_minutes: number
+  distance_km: number
+  borough?: string
+}
+
+export interface RouteStop {
+  id: number
+  route_id: number
+  article_id: number
+  stop_order: number
+  walking_notes?: string
+  article?: Article
 }
 
 export interface Category {
@@ -85,4 +124,197 @@ export async function getRandomArticle(): Promise<Article | null> {
     LIMIT 1
   `
   return articles[0] as Article || null
+}
+
+// Location-based queries
+export async function getArticlesWithLocation(): Promise<Article[]> {
+  try {
+    const articles = await sql`
+      SELECT id, title, slug, url, author, publication_date, excerpt, featured_image_url,
+             latitude, longitude, location_name, borough, historical_era, year_from, year_to
+      FROM articles
+      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+      ORDER BY title
+    `
+    return articles as Article[]
+  } catch (error) {
+    // Columns might not exist yet
+    console.error('Location query error:', error)
+    return []
+  }
+}
+
+export async function getNearbyArticles(lat: number, lng: number, radiusKm: number = 1): Promise<(Article & { distance_km: number })[]> {
+  // Haversine formula for distance calculation
+  const articles = await sql`
+    SELECT id, title, slug, url, author, publication_date, excerpt, featured_image_url,
+           latitude, longitude, location_name, borough, historical_era,
+           (6371 * acos(cos(radians(${lat})) * cos(radians(latitude)) *
+            cos(radians(longitude) - radians(${lng})) +
+            sin(radians(${lat})) * sin(radians(latitude)))) AS distance_km
+    FROM articles
+    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+    HAVING (6371 * acos(cos(radians(${lat})) * cos(radians(latitude)) *
+            cos(radians(longitude) - radians(${lng})) +
+            sin(radians(${lat})) * sin(radians(latitude)))) < ${radiusKm}
+    ORDER BY distance_km
+  `
+  return articles as (Article & { distance_km: number })[]
+}
+
+export async function getArticlesByBorough(borough: string): Promise<Article[]> {
+  const articles = await sql`
+    SELECT id, title, slug, url, author, publication_date, excerpt, featured_image_url,
+           latitude, longitude, location_name, borough, historical_era
+    FROM articles
+    WHERE borough ILIKE ${borough}
+    ORDER BY title
+  `
+  return articles as Article[]
+}
+
+export async function getArticlesByEra(era: string): Promise<Article[]> {
+  const articles = await sql`
+    SELECT id, title, slug, url, author, publication_date, excerpt, featured_image_url,
+           latitude, longitude, location_name, borough, historical_era, year_from, year_to
+    FROM articles
+    WHERE historical_era ILIKE ${era}
+    ORDER BY year_from NULLS LAST, title
+  `
+  return articles as Article[]
+}
+
+// Series queries
+export async function getAllSeries(): Promise<Series[]> {
+  try {
+    const series = await sql`
+      SELECT s.id, s.name, s.slug, s.description,
+             COUNT(a.id) as article_count
+      FROM series s
+      LEFT JOIN articles a ON a.series_id = s.id
+      GROUP BY s.id, s.name, s.slug, s.description
+      ORDER BY s.name
+    `
+    return series as Series[]
+  } catch (error) {
+    // Table might not exist yet
+    console.error('Series table error:', error)
+    return []
+  }
+}
+
+export async function getSeriesBySlug(slug: string): Promise<Series | null> {
+  const series = await sql`
+    SELECT id, name, slug, description, article_count
+    FROM series
+    WHERE slug = ${slug}
+    LIMIT 1
+  `
+  return series[0] as Series || null
+}
+
+export async function getArticlesBySeries(seriesId: number): Promise<Article[]> {
+  const articles = await sql`
+    SELECT id, title, slug, url, author, publication_date, excerpt, featured_image_url,
+           series_id, series_position
+    FROM articles
+    WHERE series_id = ${seriesId}
+    ORDER BY series_position NULLS LAST, title
+  `
+  return articles as Article[]
+}
+
+// Route queries
+export async function getAllRoutes(): Promise<Route[]> {
+  try {
+    const routes = await sql`
+      SELECT id, name, slug, description, difficulty, duration_minutes, distance_km, borough
+      FROM routes
+      ORDER BY name
+    `
+    return routes as Route[]
+  } catch (error) {
+    // Table might not exist yet
+    console.error('Routes table error:', error)
+    return []
+  }
+}
+
+export async function getRouteBySlug(slug: string): Promise<Route | null> {
+  const routes = await sql`
+    SELECT id, name, slug, description, difficulty, duration_minutes, distance_km, borough
+    FROM routes
+    WHERE slug = ${slug}
+    LIMIT 1
+  `
+  return routes[0] as Route || null
+}
+
+export async function getRouteStops(routeId: number): Promise<RouteStop[]> {
+  const stops = await sql`
+    SELECT rs.id, rs.route_id, rs.article_id, rs.stop_order, rs.walking_notes,
+           a.title, a.slug, a.excerpt, a.featured_image_url, a.latitude, a.longitude, a.location_name
+    FROM route_stops rs
+    JOIN articles a ON rs.article_id = a.id
+    WHERE rs.route_id = ${routeId}
+    ORDER BY rs.stop_order
+  `
+  return stops.map(stop => ({
+    id: stop.id,
+    route_id: stop.route_id,
+    article_id: stop.article_id,
+    stop_order: stop.stop_order,
+    walking_notes: stop.walking_notes,
+    article: {
+      id: stop.article_id,
+      title: stop.title,
+      slug: stop.slug,
+      excerpt: stop.excerpt,
+      featured_image_url: stop.featured_image_url,
+      latitude: stop.latitude,
+      longitude: stop.longitude,
+      location_name: stop.location_name
+    } as Article
+  })) as RouteStop[]
+}
+
+// Timeline queries
+export async function getArticlesByTimeRange(yearFrom: number, yearTo: number): Promise<Article[]> {
+  const articles = await sql`
+    SELECT id, title, slug, url, author, publication_date, excerpt, featured_image_url,
+           historical_era, year_from, year_to
+    FROM articles
+    WHERE (year_from IS NOT NULL AND year_from >= ${yearFrom} AND year_from <= ${yearTo})
+       OR (year_to IS NOT NULL AND year_to >= ${yearFrom} AND year_to <= ${yearTo})
+       OR (year_from IS NOT NULL AND year_to IS NOT NULL AND year_from <= ${yearFrom} AND year_to >= ${yearTo})
+    ORDER BY year_from NULLS LAST, title
+  `
+  return articles as Article[]
+}
+
+export async function getEraStats(): Promise<{ era: string; count: number }[]> {
+  try {
+    const stats = await sql`
+      SELECT historical_era as era, COUNT(*) as count
+      FROM articles
+      WHERE historical_era IS NOT NULL
+      GROUP BY historical_era
+      ORDER BY
+        CASE historical_era
+          WHEN 'Roman' THEN 1
+          WHEN 'Medieval' THEN 2
+          WHEN 'Tudor' THEN 3
+          WHEN 'Stuart' THEN 4
+          WHEN 'Georgian' THEN 5
+          WHEN 'Victorian' THEN 6
+          WHEN 'Modern' THEN 7
+          ELSE 8
+        END
+    `
+    return stats as { era: string; count: number }[]
+  } catch (error) {
+    // Column might not exist yet
+    console.error('Era stats error:', error)
+    return []
+  }
 }
