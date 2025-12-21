@@ -204,103 +204,97 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       )}
 
       {/* Main Content Area */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Author & Meta - Above Content */}
+        <div className="flex flex-wrap items-center gap-4 mb-8 pb-6 border-b border-gray-200">
+          <AuthorCard name={article.author} date={formattedDate} />
 
-          {/* Sidebar - Left */}
-          <aside className="lg:col-span-3 space-y-6">
-            <AuthorCard name={article.author} date={formattedDate} />
-
-            {(article.location_name || article.latitude) && (
-              <LocationCard
-                name={article.location_name}
-                borough={article.borough}
-                latitude={article.latitude}
-                longitude={article.longitude}
-              />
-            )}
-
-            {/* Series Navigation */}
-            {(seriesNav.prev || seriesNav.next) && (
-              <div className="bg-gray-100 rounded-lg p-4">
-                <h3 className="font-serif font-bold text-sm text-gray-700 mb-3">
-                  Lost London Series
-                </h3>
-                <div className="space-y-2 text-sm">
-                  {seriesNav.prev && (
-                    <Link
-                      href={`/article/${seriesNav.prev.slug}`}
-                      className="block text-gray-600 hover:text-black"
-                    >
-                      ← #{seriesNav.prev.series_position}: {seriesNav.prev.title.replace(/Vic Keegan's Lost London \d+:\s*/, '')}
-                    </Link>
-                  )}
-                  {seriesNav.next && (
-                    <Link
-                      href={`/article/${seriesNav.next.slug}`}
-                      className="block text-gray-600 hover:text-black"
-                    >
-                      #{seriesNav.next.series_position}: {seriesNav.next.title.replace(/Vic Keegan's Lost London \d+:\s*/, '')} →
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
-          </aside>
-
-          {/* Main Article Content */}
-          <article className="lg:col-span-6">
-            {/* Lead paragraph - larger */}
-            {leadSentence && (
-              <p className="text-xl font-serif text-gray-900 leading-relaxed mb-8">
-                <span className="text-6xl font-bold float-left mr-3 mt-1 text-red-700 leading-none">
-                  {leadSentence.charAt(0)}
-                </span>
-                {leadSentence.slice(1)}
-              </p>
-            )}
-
-            {/* Rest of content */}
-            <div
-              className="article-content text-gray-900 text-lg leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: formatContent(restContent) }}
+          {(article.location_name || article.latitude) && (
+            <LocationCard
+              name={article.location_name}
+              borough={article.borough}
+              latitude={article.latitude}
+              longitude={article.longitude}
             />
-          </article>
-
-          {/* Sidebar - Right */}
-          <aside className="lg:col-span-3">
-            {/* Related Articles */}
-            {relatedArticles.length > 0 && (
-              <div className="sticky top-4">
-                <h3 className="font-serif font-bold text-lg text-black mb-4 pb-2 border-b-2 border-black">
-                  Related Stories
-                </h3>
-                <div className="space-y-4">
-                  {relatedArticles.map((related) => (
-                    <Link
-                      key={related.id}
-                      href={`/article/${related.slug}`}
-                      className="block group"
-                    >
-                      {related.featured_image_url && (
-                        <div className="aspect-video overflow-hidden rounded mb-2">
-                          <img
-                            src={related.featured_image_url}
-                            alt={related.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-                      <h4 className="font-serif text-sm font-medium text-gray-900 group-hover:text-red-700 transition-colors leading-tight">
-                        {related.title}
-                      </h4>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </aside>
+          )}
         </div>
+
+        {/* Series Navigation - Compact */}
+        {(seriesNav.prev || seriesNav.next) && (
+          <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4 mb-8">
+            <div className="text-sm">
+              {seriesNav.prev ? (
+                <Link
+                  href={`/article/${seriesNav.prev.slug}`}
+                  className="text-gray-600 hover:text-red-700"
+                >
+                  ← Previous
+                </Link>
+              ) : <span />}
+            </div>
+            <span className="text-xs text-gray-500 font-medium">Lost London Series</span>
+            <div className="text-sm">
+              {seriesNav.next ? (
+                <Link
+                  href={`/article/${seriesNav.next.slug}`}
+                  className="text-gray-600 hover:text-red-700"
+                >
+                  Next →
+                </Link>
+              ) : <span />}
+            </div>
+          </div>
+        )}
+
+        {/* Main Article Content */}
+        <article className="mb-12">
+          {/* Lead paragraph - larger with drop cap */}
+          {leadSentence && (
+            <p className="text-xl md:text-2xl font-serif text-gray-900 leading-relaxed mb-8">
+              <span className="text-6xl md:text-7xl font-bold float-left mr-3 mt-1 text-red-700 leading-none">
+                {leadSentence.charAt(0)}
+              </span>
+              {leadSentence.slice(1)}
+            </p>
+          )}
+
+          {/* Rest of content */}
+          <div
+            className="article-content prose prose-lg max-w-none"
+            dangerouslySetInnerHTML={{ __html: formatContent(restContent) }}
+          />
+        </article>
+
+        {/* Related Articles - Below Content */}
+        {relatedArticles.length > 0 && (
+          <div className="border-t border-gray-200 pt-8">
+            <h3 className="font-serif font-bold text-xl text-black mb-6 pb-2 border-b-2 border-black inline-block">
+              Related Stories
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedArticles.map((related) => (
+                <Link
+                  key={related.id}
+                  href={`/article/${related.slug}`}
+                  className="block group"
+                >
+                  {related.featured_image_url && (
+                    <div className="aspect-video overflow-hidden rounded mb-2">
+                      <img
+                        src={related.featured_image_url}
+                        alt={related.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
+                  <h4 className="font-serif text-sm font-medium text-gray-900 group-hover:text-red-700 transition-colors leading-tight">
+                    {related.title}
+                  </h4>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -327,11 +321,34 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 function formatContent(content: string): string {
   if (!content) return ''
 
-  // Convert plain text to paragraphs
-  const paragraphs = content
+  // URL regex pattern
+  const urlPattern = /(https?:\/\/[^\s<>"{}|\\^`[\]]+)/g
+
+  // Convert URLs to anchor tags
+  const contentWithLinks = content.replace(urlPattern, (url) => {
+    // Clean up trailing punctuation that might be part of sentence
+    let cleanUrl = url
+    let trailing = ''
+    if (/[.,;:!?)]$/.test(url)) {
+      trailing = url.slice(-1)
+      cleanUrl = url.slice(0, -1)
+    }
+    // Create readable link text (domain + shortened path)
+    const displayText = cleanUrl.length > 50
+      ? cleanUrl.substring(0, 47) + '...'
+      : cleanUrl
+    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:text-blue-900 underline">${displayText}</a>${trailing}`
+  })
+
+  // Split into paragraphs
+  const paragraphs = contentWithLinks
     .split(/\n\n+/)
     .filter(p => p.trim())
-    .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+    .map(p => {
+      // Replace single newlines with proper spacing
+      const formatted = p.replace(/\n/g, '<br class="mb-2">')
+      return `<p class="mb-6 text-gray-800 leading-loose">${formatted}</p>`
+    })
     .join('')
 
   return paragraphs

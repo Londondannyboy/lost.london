@@ -255,20 +255,49 @@ h1, h2 {
 /* Article content styling */
 .article-content {
   color: #1a1a1a !important;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.125rem;
 }
 
 .article-content p {
-  color: #1a1a1a;
-  margin-bottom: 1.5rem;
-  line-height: 1.8;
+  color: #374151;
+  margin-bottom: 1.75rem;
+  line-height: 1.9;
+  letter-spacing: 0.01em;
 }
 
 .article-content a {
   color: #1d4ed8;
   text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s;
+}
+
+.article-content a:hover {
+  color: #1e40af;
 }
 
 .article-content strong {
   color: #000;
   font-weight: 600;
+}
+
+.article-content blockquote {
+  border-left: 4px solid #991b1b;
+  padding-left: 1.5rem;
+  margin: 2rem 0;
+  font-style: italic;
+  color: #4b5563;
+}
+
+/* Mobile readability */
+@media (max-width: 768px) {
+  .article-content {
+    font-size: 1.0625rem;
+  }
+
+  .article-content p {
+    margin-bottom: 1.5rem;
+    line-height: 1.85;
+  }
 }
