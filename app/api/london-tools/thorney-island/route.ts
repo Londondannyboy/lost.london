@@ -1,9 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
+// Phonetic variations and common mishearings
+const PHONETIC_MAPPINGS: Record<string, string> = {
+  // Thorney variations
+  'fauny': 'thorney',
+  'fawny': 'thorney',
+  'thorny': 'thorney',
+  'thorn-ee': 'thorney',
+  'forney': 'thorney',
+  'fawney': 'thorney',
+  'fourney': 'thorney',
+  'fauny island': 'thorney island',
+  'fawny island': 'thorney island',
+  'thorny island': 'thorney island',
+  // Tyburn variations
+  'tie burn': 'tyburn',
+  'tieburn': 'tyburn',
+  'ty burn': 'tyburn',
+  // Devil's Acre variations
+  'devils acre': "devil's acre",
+  'devil acre': "devil's acre",
+  'devil\'s acre': "devil's acre",
+  // Westminster variations
+  'west minster': 'westminster',
+  // Caxton variations
+  'caxton': 'caxton',
+  'william caxton': 'caxton',
+}
+
+function normalizeQuery(query: string): string {
+  let normalized = query.toLowerCase().trim()
+
+  // Check for exact phonetic matches
+  if (PHONETIC_MAPPINGS[normalized]) {
+    return PHONETIC_MAPPINGS[normalized]
+  }
+
+  // Check for partial matches within the query
+  for (const [phonetic, correct] of Object.entries(PHONETIC_MAPPINGS)) {
+    if (normalized.includes(phonetic)) {
+      normalized = normalized.replace(phonetic, correct)
+    }
+  }
+
+  return normalized
+}
+
 async function searchThorneyIsland(query: string, limit: number = 5) {
   const sql = neon(process.env.DATABASE_URL!)
-  const searchTerm = `%${query}%`
+  const normalizedQuery = normalizeQuery(query)
+  const searchTerm = `%${normalizedQuery}%`
 
   const chunks = await sql`
     SELECT id, chunk_number, content
@@ -31,10 +78,13 @@ export async function GET(request: NextRequest) {
 
     const chunks = await searchThorneyIsland(query, limit)
 
+    const normalizedQuery = normalizeQuery(query)
+
     return NextResponse.json({
       success: true,
       source: 'Thorney Island by Vic Keegan',
       query,
+      normalized_query: normalizedQuery,
       count: chunks.length,
       results: chunks.map((c: any) => ({
         chunk_number: c.chunk_number,
@@ -66,11 +116,13 @@ export async function POST(request: NextRequest) {
     }
 
     const chunks = await searchThorneyIsland(query, limit)
+    const normalizedQuery = normalizeQuery(query)
 
     return NextResponse.json({
       success: true,
       source: 'Thorney Island by Vic Keegan',
       query,
+      normalized_query: normalizedQuery,
       count: chunks.length,
       results: chunks.map((c: any) => ({
         chunk_number: c.chunk_number,
