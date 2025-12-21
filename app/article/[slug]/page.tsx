@@ -6,6 +6,7 @@ import { AuthorCard } from '@/components/AuthorCard'
 import { EraBadge } from '@/components/EraBadge'
 import { LocationCard } from '@/components/LocationCard'
 import { BookmarkButton } from '@/components/BookmarkButton'
+import { ArticleVoiceWidget } from '@/components/ArticleVoiceWidget'
 
 interface Article {
   id: number
@@ -217,6 +218,21 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               longitude={article.longitude}
             />
           )}
+        </div>
+
+        {/* Ask VIC about this article */}
+        <div className="mb-8">
+          <ArticleVoiceWidget
+            article={{
+              title: article.title,
+              author: article.author,
+              content: article.content,
+              excerpt: article.excerpt,
+              categories: article.categories,
+              location_name: article.location_name,
+              historical_era: article.historical_era,
+            }}
+          />
         </div>
 
         {/* Series Navigation - Compact */}
