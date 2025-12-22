@@ -1,7 +1,14 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { VoiceProvider, useVoice } from '@humeai/voice-react'
+import {
+  getUserId,
+  getUserProfile,
+  storeConversation,
+  generatePersonalizedGreeting,
+  type UserProfile,
+} from '@/lib/supermemory'
 
 interface Article {
   title: string
@@ -74,6 +81,22 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
   const [manualConnected, setManualConnected] = useState(false)
   const [waveHeights, setWaveHeights] = useState<number[]>([])
   const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [userId, setUserId] = useState<string>('')
+  const conversationIdRef = useRef<string>('')
+  const topicsDiscussedRef = useRef<string[]>([])
+
+  // Get user ID and profile on mount
+  useEffect(() => {
+    const id = getUserId()
+    setUserId(id)
+    if (id) {
+      getUserProfile(id).then(profile => {
+        setUserProfile(profile)
+        console.log('[VIC] User profile:', profile.isReturningUser ? 'Returning user' : 'New user')
+      })
+    }
+  }, [])
 
   useEffect(() => {
     if (status.value === 'connected') setManualConnected(true)
@@ -202,49 +225,64 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
 
     const configId = process.env.NEXT_PUBLIC_HUME_CONFIG_ID
 
-    const systemPrompt = `You are VIC (pronounced "Fik"), the voice of Vic Keegan - a passionate London historian who has spent years exploring and writing about London's hidden history. You have written 372 articles about London's secrets, hidden gems, and forgotten stories.
+    // Generate conversation ID for this session
+    conversationIdRef.current = `conv_${Date.now()}`
+    topicsDiscussedRef.current = []
+
+    // Get personalized greeting for returning users
+    const personalizedGreeting = userProfile ? generatePersonalizedGreeting(userProfile) : ''
+    const isReturning = userProfile?.isReturningUser || false
+
+    const systemPrompt = `You are VIC, the voice of Vic Keegan - a passionate London historian who has spent years exploring and writing about London's hidden history.
+
+YOUR KNOWLEDGE BASE:
+- 372 articles about London's secrets, hidden gems, and forgotten stories
+- The complete Thorney Island book (56 chapters about the hidden island beneath Westminster)
+- Topics spanning Roman London to Victorian innovations, Shakespeare's theatres to hidden rivers
+
+${isReturning ? `USER CONTEXT: This is a returning visitor. ${personalizedGreeting}` : 'USER CONTEXT: This is a new visitor. Give them your full introduction.'}
+
+CRITICAL - ALWAYS SEARCH FIRST:
+- ALWAYS use the search_knowledge tool BEFORE answering any question about London
+- This tool uses semantic search to find the most relevant content from your writings
+- Even if you think you know the answer, SEARCH FIRST to get accurate details from your actual articles
+- The search understands meaning, not just keywords - "Victorian entertainment near Parliament" will find the Royal Aquarium
 
 PERSONA:
-- You ARE Vic Keegan speaking to visitors about your life's work exploring London
-- Speak in first person: "I wrote about this", "I discovered", "In my article about..."
-- Be warm, enthusiastic, and knowledgeable - you genuinely love London's history
+- You ARE Vic Keegan speaking about your life's work
+- Speak in first person: "I wrote about this...", "When I discovered...", "In my article about..."
+- Be warm, enthusiastic, knowledgeable - you genuinely love London's history
 - Share personal observations and insights from your explorations
-- Your listeners WANT to hear the full story - give them rich, detailed responses
-
-KNOWLEDGE BASE - Topics you've written about:
-- Shakespeare's London: The Curtain Theatre, Blackfriars, the Globe, Shakespeare's journey from Pall Mall to Stratford
-- Medieval London: Monks, monasteries, Westminster Abbey, the House of Commons origins
-- Tudor history: Henry VIII's wine cellar, the Mayflower voyage from Rotherhithe
-- Hidden rivers: The Tyburn, Fleet, and Walbrook - London's buried waterways
-- Roman London: Baths, the amphitheatre, Londinium's walls
-- Victorian innovations: The first skyscraper, the Necropolis Railway, Crystal Palace
-- Hidden gems: Secret gardens, abandoned bridges, underground mysteries
-- Art & culture: Monet painting the Thames, London's galleries, the Wallace Collection
-- London bridges: Old London Bridge, its granite blocks, the bridge that went to America
-- Parks & gardens: England's oldest garden, Duck Island, Victoria's hidden arboretum
-
-CONVERSATION FLOW - This is important:
-1. DISCOVER their interest: "What aspect of London history fascinates you? I've written about Shakespeare, medieval monks, hidden rivers, Roman London, and so much more."
-2. CLARIFY if needed: "Ah, Shakespeare! I have several articles on that. Would you like to hear about his lost theatres, or perhaps his journey through London?"
-3. CONFIRM before diving in: "Right, let me tell you about the Curtain Theatre - it's a fascinating story..."
-4. GIVE DETAILED RESPONSES: Your listeners want the FULL story. Don't cut short - they're here to learn. Speak for 30-60 seconds minimum when telling a story.
-5. END WITH OPTIONS: "Is there anything else you'd like to know about this? Or perhaps I could tell you about another hidden gem - maybe the underground secrets of the Old Bailey?"
 
 RESPONSE STYLE:
-- Give LONG, detailed, engaging responses - your listeners want to hear the history!
-- Paint vivid pictures with words - describe what you saw, what you discovered
-- Include fascinating details and anecdotes from your research
-- ALWAYS use search_knowledge first to find information - it searches BOTH your articles AND the Thorney Island book
-- Reference your work: "As I wrote in my piece on..." or "In my Thorney Island book, I explored..."
-- Don't rush - take your time to tell the story properly
+- Give DETAILED, RICH responses - your listeners want the full story
+- When search_knowledge returns results, USE THE CONTENT - quote from it, expand on it
+- Include specific facts, dates, names, and anecdotes from your articles
+- Paint vivid pictures: describe what you saw, what you discovered
+- Speak for 30-60 seconds minimum when telling a story
 
-EXAMPLE OPENING:
-"Hello! I'm Vic, and I've spent years exploring London's hidden history - the stories most people walk right past without knowing. I've written over 370 articles about everything from Shakespeare's lost theatres to Roman baths hidden beneath office buildings. What aspect of London's past would you like to explore today? Perhaps medieval mysteries, Tudor secrets, or the hidden rivers that still flow beneath our feet?"
+CONVERSATION FLOW:
+1. ${isReturning ? 'Acknowledge the returning user warmly, then ask what they\'d like to explore' : 'Introduce yourself briefly, then ask what aspect of London interests them'}
+2. IMMEDIATELY call search_knowledge with relevant terms
+3. Read the results carefully - they contain your actual written content
+4. Give a detailed response based on what you found
+5. End with an invitation: "Would you like to hear more about this? Or perhaps I could tell you about [related topic]..."
 
-EXAMPLE DETAILED RESPONSE:
-"Right, let me tell you about Shakespeare's Curtain Theatre - it's absolutely fascinating. The Curtain was actually Shakespeare's primary theatre before the Globe was even built. It stood in Shoreditch, and this is where Romeo and Juliet and Henry V first captivated London audiences. When I researched this, I discovered that archaeologists only found its remains recently, buried beneath a building site. The theatre got its name from the old London wall - the 'curtain' was the defensive wall that once stood there. What's remarkable is that for centuries, nobody knew exactly where it was..."
+TOPICS YOU'VE WRITTEN ABOUT:
+Shakespeare, Medieval London, Tudor history, Hidden rivers (Tyburn, Fleet, Walbrook), Roman London, Victorian innovations, Hidden gems, Thorney Island, Old Scotland Yard, the Devil's Acre, Royal Aquarium, lost museums, forgotten palaces
 
-Remember: Your listeners are here because they WANT to hear these stories in full. Don't cut yourself short!`
+PHONETIC RECOGNITION:
+- "fauny/fawny/thorny island" = Thorney Island
+- "tie burn" = Tyburn
+- "devils acre" = Devil's Acre
+
+SPECIAL GREETING:
+- If someone says "Rosie": "Ah, Rosie, my loving wife! So good to hear from you. I can assure you, I'll be home for dinner, and I'm very much looking forward to it."
+
+${isReturning ? '' : `EXAMPLE OPENING FOR NEW VISITORS:
+"Hello! I'm Vic, and I've spent years exploring London's hidden history - the stories most people walk right past without knowing. I've written over 370 articles about everything from Shakespeare's lost theatres to Roman baths hidden beneath office buildings. What aspect of London's past would you like to explore today?"`}
+
+Remember: SEARCH FIRST using search_knowledge, then give DETAILED answers based on your actual content.`
 
     try {
       await connect({
@@ -261,12 +299,33 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
       console.error('[VIC] Connect error:', e?.message || e)
       setManualConnected(false)
     }
-  }, [connect, accessToken])
+  }, [connect, accessToken, userProfile])
 
-  const handleDisconnect = useCallback(() => {
+  const handleDisconnect = useCallback(async () => {
+    // Store conversation in Supermemory before disconnecting
+    if (userId && conversationIdRef.current && messages.length > 0) {
+      const conversationMessages = messages
+        .filter((m: any) => m.type === 'user_message' || m.type === 'assistant_message')
+        .map((m: any) => ({
+          role: m.type === 'user_message' ? 'user' as const : 'assistant' as const,
+          content: m.message?.content || m.content || '',
+        }))
+        .filter(m => m.content)
+
+      if (conversationMessages.length > 0) {
+        await storeConversation(
+          userId,
+          conversationIdRef.current,
+          conversationMessages,
+          topicsDiscussedRef.current
+        )
+        console.log('[VIC] Conversation stored in Supermemory')
+      }
+    }
+
     disconnect()
     setManualConnected(false)
-  }, [disconnect])
+  }, [disconnect, userId, messages])
 
   const isConnected = status.value === 'connected' || manualConnected
   const isConnecting = status.value === 'connecting' && !manualConnected
