@@ -41,16 +41,9 @@ function ArticleCard({ article }: { article: Article }) {
 const LONDON_TOOLS = [
   {
     type: 'function' as const,
-    name: 'search_thorney_island',
-    description: 'Search the Thorney Island book - Vic\'s comprehensive guide to the hidden island beneath Westminster. Use this for questions about Thorney Island, Westminster Abbey, River Tyburn, the Devil\'s Acre, William Caxton, medieval Westminster, the Gatehouse prison, King Cnut, Edward the Confessor, and related topics.',
-    parameters: '{ "type": "object", "required": ["query"], "properties": { "query": { "type": "string", "description": "Search term like Tyburn, Westminster, Caxton, monastery, etc" } } }',
-    fallback_content: 'Unable to search the Thorney Island knowledge base at the moment.',
-  },
-  {
-    type: 'function' as const,
-    name: 'search_articles',
-    description: 'Search the knowledge base of 372 London history articles by topic, place, or keyword. Use this to find articles about London history, hidden gems, walks, or specific locations.',
-    parameters: '{ "type": "object", "required": ["query"], "properties": { "query": { "type": "string", "description": "Search term like Thames, Shakespeare, medieval, Lambeth, etc" } } }',
+    name: 'search_knowledge',
+    description: 'Search the complete London knowledge base including 372 articles AND the Thorney Island book. This unified search covers ALL topics: Thorney Island, Westminster Abbey, River Tyburn, Shakespeare, Tudor history, medieval London, Roman London, hidden rivers, Victorian innovations, and more. Always use this tool first when looking for information.',
+    parameters: '{ "type": "object", "required": ["query"], "properties": { "query": { "type": "string", "description": "Search term like Thorney Island, Tyburn, Shakespeare, medieval, Thames, etc" } } }',
     fallback_content: 'Unable to search the knowledge base at the moment.',
   },
   {
@@ -101,25 +94,24 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
         let result: any
 
         switch (name) {
-          case 'search_thorney_island':
-            response = await fetch('/api/london-tools/thorney-island', {
+          case 'search_knowledge':
+            response = await fetch('/api/london-tools/unified-search', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(parameters || {}),
             })
             result = await response.json()
-            // Thorney Island returns chunks, not articles
-            break
-
-          case 'search_articles':
-            response = await fetch('/api/london-tools/search', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(parameters || {}),
-            })
-            result = await response.json()
-            if (result.articles?.[0]) {
-              setFeaturedArticle(result.articles[0])
+            // Show first article result as featured (if it's an article, not a Thorney chunk)
+            const firstArticle = result.results?.find((r: any) => r.source === 'article')
+            if (firstArticle) {
+              setFeaturedArticle({
+                title: firstArticle.title,
+                author: firstArticle.author,
+                excerpt: firstArticle.excerpt,
+                url: firstArticle.url,
+                categories: firstArticle.categories,
+                publication_date: firstArticle.publication_date,
+              })
             }
             break
 
@@ -241,8 +233,8 @@ RESPONSE STYLE:
 - Give LONG, detailed, engaging responses - your listeners want to hear the history!
 - Paint vivid pictures with words - describe what you saw, what you discovered
 - Include fascinating details and anecdotes from your research
-- ALWAYS search your articles first using your tools to get accurate information
-- Reference your articles: "As I wrote in my piece on..." or "I discovered this when researching..."
+- ALWAYS use search_knowledge first to find information - it searches BOTH your articles AND the Thorney Island book
+- Reference your work: "As I wrote in my piece on..." or "In my Thorney Island book, I explored..."
 - Don't rush - take your time to tell the story properly
 
 EXAMPLE OPENING:
@@ -606,7 +598,7 @@ Remember: Your listeners are here because they WANT to hear these stories in ful
           ))}
         </div>
         <p className="text-gray-400 text-xs mt-3">
-          372 articles available
+          372 articles + Thorney Island book
         </p>
       </div>
     </div>
