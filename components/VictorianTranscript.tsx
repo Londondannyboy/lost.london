@@ -2,12 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-interface Message {
-  type: string
-  message?: { content?: string }
-  content?: string
-  receivedAt?: Date
-}
+// Use 'any' for Hume messages as their types are complex
+type HumeMessage = any
 
 interface ValidationLog {
   id: number
@@ -22,7 +18,7 @@ interface ValidationLog {
 }
 
 interface VictorianTranscriptProps {
-  messages: Message[]
+  messages: HumeMessage[]
   isConnected: boolean
   showDebug?: boolean
 }
@@ -66,7 +62,7 @@ export function VictorianTranscript({ messages, isConnected, showDebug = false }
     return () => clearInterval(interval)
   }, [showDebug, isOpen, messages.length])
 
-  const getMessageContent = (msg: Message): string => {
+  const getMessageContent = (msg: HumeMessage): string => {
     return msg.message?.content || msg.content || ''
   }
 
