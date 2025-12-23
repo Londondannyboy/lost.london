@@ -435,62 +435,62 @@ Remember:
     <div className="flex flex-col items-center">
       {/* VIC Avatar - Main Tap Target */}
       <div className="relative mb-8">
-        {/* Glowing rings - always visible, more intense when idle */}
+        {/* Glowing rings - white/gray, always visible when idle */}
         {!isConnected && !isConnecting && (
           <>
-            {/* Outer glow ring */}
+            {/* Outer glow ring - white */}
             <div
               className="absolute inset-0 rounded-full animate-[pulse_2s_ease-in-out_infinite]"
               style={{
-                background: 'radial-gradient(circle, rgba(220,38,38,0.3) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(0,0,0,0.1) 0%, transparent 70%)',
                 transform: 'scale(1.4)',
               }}
             />
-            {/* Inner pulse ring */}
+            {/* Inner pulse ring - gray */}
             <div
               className="absolute inset-0 rounded-full animate-[ping_3s_ease-in-out_infinite]"
               style={{
-                border: '3px solid rgba(220,38,38,0.5)',
+                border: '3px solid rgba(0,0,0,0.2)',
                 transform: 'scale(1.15)',
               }}
             />
-            {/* Second pulse ring - offset timing */}
+            {/* Second pulse ring - lighter */}
             <div
               className="absolute inset-0 rounded-full animate-[ping_3s_ease-in-out_infinite_1.5s]"
               style={{
-                border: '2px solid rgba(220,38,38,0.3)',
+                border: '2px solid rgba(0,0,0,0.1)',
                 transform: 'scale(1.25)',
               }}
             />
           </>
         )}
 
-        {/* Active pulse - when connected */}
+        {/* Active pulse - when connected - white rings */}
         {isConnected && (
           <>
             <div
               className="absolute inset-0 rounded-full animate-[ping_2s_ease-in-out_infinite]"
               style={{
-                border: '3px solid rgba(34,197,94,0.6)',
+                border: '3px solid rgba(0,0,0,0.3)',
                 transform: 'scale(1.15)',
               }}
             />
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'radial-gradient(circle, rgba(34,197,94,0.2) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(0,0,0,0.1) 0%, transparent 70%)',
                 transform: 'scale(1.3)',
               }}
             />
           </>
         )}
 
-        {/* Speaking glow - when VIC is talking */}
+        {/* Speaking glow - white pulse when VIC is talking */}
         {isPlaying && (
           <div
             className="absolute inset-0 rounded-full animate-[pulse_0.5s_ease-in-out_infinite]"
             style={{
-              background: 'radial-gradient(circle, rgba(251,191,36,0.4) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 60%)',
               transform: 'scale(1.5)',
             }}
           />
@@ -503,7 +503,7 @@ Remember:
           className="relative z-10 group focus:outline-none cursor-pointer"
           aria-label={isConnected ? "End conversation with VIC" : "Tap to speak with VIC about London"}
         >
-          {/* Animated border ring */}
+          {/* Animated border ring - black/gray */}
           <div
             className={`absolute inset-0 rounded-full ${
               isPlaying
@@ -512,15 +512,15 @@ Remember:
             }`}
             style={{
               background: isPlaying
-                ? 'conic-gradient(from 0deg, #fbbf24, #f59e0b, #d97706, #fbbf24)'
+                ? 'conic-gradient(from 0deg, #000, #333, #666, #000)'
                 : isConnected
-                ? 'conic-gradient(from 0deg, #22c55e, #16a34a, #15803d, #22c55e)'
-                : 'conic-gradient(from 0deg, #dc2626, #ef4444, #f97316, #dc2626)',
+                ? 'conic-gradient(from 0deg, #333, #555, #333)'
+                : 'conic-gradient(from 0deg, #000, #222, #444, #000)',
               padding: '4px',
               transform: 'scale(1.02)',
             }}
           >
-            <div className="w-full h-full rounded-full bg-stone-50" />
+            <div className="w-full h-full rounded-full bg-white" />
           </div>
 
           <div className={`relative w-56 h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 rounded-full overflow-hidden transition-all duration-300 ${
@@ -554,18 +554,18 @@ Remember:
               }}
             />
 
-            {/* Speaking overlay effect - sound waves */}
+            {/* Speaking overlay effect - white/gray sound waves */}
             {isPlaying && (
               <div className="absolute inset-0 pointer-events-none">
-                {/* Pulsing overlay */}
+                {/* Pulsing overlay - white */}
                 <div
-                  className="absolute inset-0 bg-gradient-to-t from-amber-500/20 to-transparent animate-pulse"
+                  className="absolute inset-0 bg-gradient-to-t from-white/30 to-transparent animate-pulse"
                 />
-                {/* Sound wave rings */}
+                {/* Sound wave rings - white */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="absolute w-full h-full rounded-full border-2 border-amber-400/40 animate-[ping_1s_ease-out_infinite]" />
-                  <div className="absolute w-full h-full rounded-full border-2 border-amber-400/30 animate-[ping_1s_ease-out_infinite_0.3s]" />
-                  <div className="absolute w-full h-full rounded-full border-2 border-amber-400/20 animate-[ping_1s_ease-out_infinite_0.6s]" />
+                  <div className="absolute w-full h-full rounded-full border-2 border-white/60 animate-[ping_1s_ease-out_infinite]" />
+                  <div className="absolute w-full h-full rounded-full border-2 border-white/40 animate-[ping_1s_ease-out_infinite_0.3s]" />
+                  <div className="absolute w-full h-full rounded-full border-2 border-white/20 animate-[ping_1s_ease-out_infinite_0.6s]" />
                 </div>
               </div>
             )}
@@ -581,9 +581,9 @@ Remember:
             {/* Listening indicator when connected but not speaking */}
             {isConnected && !isPlaying && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 px-3 py-1 rounded-full">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black px-3 py-1 rounded-full">
                   <span className="text-white text-xs flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                     Listening...
                   </span>
                 </div>
@@ -632,27 +632,24 @@ Remember:
         `}</style>
       </div>
 
-      {/* Connect/Disconnect Button - with glow */}
+      {/* Connect/Disconnect Button - black, minimal */}
       <div className="relative mb-4">
-        {/* Glow effect behind button when not connected */}
+        {/* Subtle shadow glow when not connected */}
         {!isConnected && !isConnecting && (
           <div
-            className="absolute inset-0 rounded-lg animate-[pulse_2s_ease-in-out_infinite] blur-md"
-            style={{
-              background: 'linear-gradient(90deg, #dc2626, #f97316, #dc2626)',
-              transform: 'scale(1.1)',
-            }}
+            className="absolute inset-0 rounded-full animate-[pulse_2s_ease-in-out_infinite] blur-md bg-black/20"
+            style={{ transform: 'scale(1.1)' }}
           />
         )}
         <button
           onClick={isConnected ? handleDisconnect : handleConnect}
           disabled={isConnecting}
-          className={`relative z-10 px-10 py-4 rounded-lg font-serif font-bold text-lg transition-all duration-300 flex items-center gap-3 ${
+          className={`relative z-10 px-10 py-4 rounded-full font-medium text-lg transition-all duration-300 flex items-center gap-3 ${
             isConnected
               ? 'bg-gray-800 text-white hover:bg-gray-700 shadow-lg'
               : isConnecting
-              ? 'bg-gray-300 text-gray-600 cursor-wait'
-              : 'bg-gradient-to-r from-red-600 to-orange-500 text-white hover:from-red-700 hover:to-orange-600 shadow-xl hover:shadow-2xl hover:scale-105'
+              ? 'bg-gray-200 text-gray-500 cursor-wait'
+              : 'bg-black text-white hover:bg-gray-800 shadow-xl hover:shadow-2xl hover:scale-105'
           }`}
         >
           {isConnecting ? (
@@ -731,10 +728,10 @@ Remember:
         </div>
       )}
 
-      {/* Topics VIC can discuss - always visible */}
+      {/* Topics VIC can discuss - minimal startup style */}
       <div className="text-center mb-6 w-full max-w-lg">
-        <p className="text-gray-600 text-sm mb-3 font-serif">
-          {isConnected ? "Ask VIC about any of these topics:" : "Topics VIC can tell you about:"}
+        <p className="text-gray-500 text-sm mb-3">
+          {isConnected ? "Ask about:" : "Topics:"}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           {[
@@ -745,21 +742,15 @@ Remember:
             'Hidden Rivers',
             'Roman',
             'Victorian',
-            'Hidden Gems',
-            'Art',
-            'Bridges',
           ].map((topic) => (
             <span
               key={topic}
-              className="px-3 py-1 text-xs bg-white text-gray-700 border border-gray-300 hover:border-black hover:text-black transition-colors cursor-default"
+              className="px-3 py-1.5 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-black hover:text-white transition-all cursor-default"
             >
               {topic}
             </span>
           ))}
         </div>
-        <p className="text-gray-400 text-xs mt-3">
-          372 articles + Thorney Island book
-        </p>
       </div>
     </div>
   )
