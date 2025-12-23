@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { VoiceProvider, useVoice } from '@humeai/voice-react'
 import {
   getUserId,
   getUserProfile,
-  storeMessage,
+  rememberAboutUser,
+  storeMessageInZep,
+  storeConversation,
   generatePersonalizedGreeting,
-  searchKnowledge,
   type UserProfile,
-} from '@/lib/zep-memory'
+} from '@/lib/hybrid-memory'
 
 interface Article {
   title: string
@@ -75,6 +76,13 @@ const LONDON_TOOLS = [
     parameters: '{ "type": "object", "properties": {} }',
     fallback_content: 'Unable to get random article at the moment.',
   },
+  {
+    type: 'function' as const,
+    name: 'remember_user',
+    description: 'Remember something important about the user for future conversations. Use this when the user tells you their name, mentions their interests, or shares something you should remember. Types: name for their name, interest for topics they like, preference for how they like things, general for other facts.',
+    parameters: `{ "type": "object", "required": ["memory", "type"], "properties": { "memory": { "type": "string", "description": "What to remember about the user" }, "type": { "type": "string", "enum": ["name", "interest", "preference", "general"], "description": "Category of memory" } } }`,
+    fallback_content: 'Unable to save memory at the moment.',
+  },
 ]
 
 function VoiceInterface({ accessToken }: { accessToken: string }) {
@@ -84,6 +92,8 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
   const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [userId, setUserId] = useState<string>('')
+  const conversationIdRef = useRef<string>('')
+  const topicsDiscussedRef = useRef<string[]>([])
 
   // Get user ID and profile on mount
   useEffect(() => {
@@ -117,14 +127,18 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
 
         switch (name) {
           case 'search_knowledge':
-            // Use semantic search with pgvector embeddings
-            response = await fetch('/api/london-tools/semantic-search', {
+            // Use HYBRID search: pgvector for content + Zep for relationships
+            response = await fetch('/api/london-tools/hybrid-search', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(parameters || {}),
             })
             result = await response.json()
-            // Show first article result as featured (if it's an article, not a Thorney chunk)
+            // Track topics discussed for Supermemory
+            if (parameters?.query) {
+              topicsDiscussedRef.current.push(parameters.query)
+            }
+            // Show first article result as featured
             const firstArticle = result.results?.find((r: any) => r.source_type === 'article')
             if (firstArticle) {
               setFeaturedArticle({
@@ -171,6 +185,20 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
             result = await response.json()
             if (result.article) {
               setFeaturedArticle(result.article)
+            }
+            break
+
+          case 'remember_user':
+            // Store memory in Supermemory (explicit user facts)
+            if (userId && parameters?.memory) {
+              const success = await rememberAboutUser(
+                userId,
+                parameters.memory,
+                parameters.type || 'general'
+              )
+              result = { success, message: success ? 'Memory saved' : 'Failed to save memory' }
+            } else {
+              result = { success: false, message: 'Missing user ID or memory content' }
             }
             break
 
@@ -224,6 +252,10 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
 
     const configId = process.env.NEXT_PUBLIC_HUME_CONFIG_ID
 
+    // Initialize conversation tracking
+    conversationIdRef.current = `conv_${Date.now()}`
+    topicsDiscussedRef.current = []
+
     // Get personalized greeting for returning users
     const personalizedGreeting = userProfile ? generatePersonalizedGreeting(userProfile) : ''
     const isReturning = userProfile?.isReturningUser || false
@@ -238,13 +270,14 @@ YOUR KNOWLEDGE BASE:
 
 ${isReturning ? `USER CONTEXT: This is a returning visitor. ${personalizedGreeting}` : 'USER CONTEXT: This is a new visitor. After your brief introduction, ask for their name.'}
 
-MEMORY (AUTOMATIC):
-- I remember everything from our conversations automatically
-- Names, interests, and topics discussed are captured without any special commands
-- Just talk naturally - the system handles memory
-- For returning visitors, I know who they are and what we discussed
+MEMORY - IMPORTANT:
+- You can REMEMBER things about users using the remember_user tool
+- When a user tells you their name, IMMEDIATELY use remember_user with type "name"
+- When they express interest in a topic, use remember_user with type "interest"
+- Example: User says "I'm Sarah" → Call remember_user(memory: "User's name is Sarah", type: "name")
+- Conversation context is also captured automatically for future visits
 
-${isReturning ? 'Since this is a returning user, acknowledge what you remember about them!' : 'For new visitors: After introducing yourself, ask "And what should I call you?"'}
+${isReturning ? 'Since this is a returning user, acknowledge what you remember about them!' : 'For new visitors: After introducing yourself, ask "And what should I call you?" - then REMEMBER their name!'}
 
 CRITICAL - ALWAYS SEARCH FIRST:
 - ALWAYS use the search_knowledge tool BEFORE answering any question about London
@@ -288,9 +321,10 @@ ${isReturning ? '' : `EXAMPLE OPENING FOR NEW VISITORS:
 
 Remember:
 1. ASK FOR THEIR NAME (new visitors) or USE THEIR NAME (returning visitors)
-2. SEARCH FIRST using search_knowledge - your answers come from the knowledge graph
-3. Give DETAILED answers based on your actual content
-4. Suggest related topics that the graph reveals`
+2. Use remember_user to SAVE their name and interests
+3. SEARCH FIRST using search_knowledge - combines articles + knowledge graph
+4. Give DETAILED answers based on your actual content
+5. Suggest related topics from the graph (relatedEntities, suggestedTopics)`
 
     try {
       await connect({
@@ -310,8 +344,7 @@ Remember:
   }, [connect, accessToken, userProfile])
 
   const handleDisconnect = useCallback(async () => {
-    // Store conversation messages in Zep before disconnecting
-    // Zep automatically extracts facts from messages
+    // Store conversation in BOTH Zep and Supermemory
     if (userId && messages.length > 0) {
       const conversationMessages = messages
         .filter((m: any) => m.type === 'user_message' || m.type === 'assistant_message')
@@ -321,11 +354,22 @@ Remember:
         }))
         .filter(m => m.content)
 
-      // Store each message in Zep (facts are extracted automatically)
-      for (const msg of conversationMessages) {
-        await storeMessage(userId, msg.content, msg.role)
+      // Store in Supermemory (full conversation for session memory)
+      if (conversationMessages.length > 0) {
+        await storeConversation(
+          userId,
+          conversationIdRef.current,
+          conversationMessages,
+          topicsDiscussedRef.current
+        )
+        console.log('[VIC] Conversation stored in Supermemory')
       }
-      console.log('[VIC] Conversation stored in Zep - facts extracted automatically')
+
+      // Store key messages in Zep (automatic fact extraction)
+      for (const msg of conversationMessages.slice(0, 10)) { // First 10 messages
+        await storeMessageInZep(userId, msg.content, msg.role)
+      }
+      console.log('[VIC] Messages stored in Zep for fact extraction')
     }
 
     disconnect()
