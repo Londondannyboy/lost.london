@@ -639,12 +639,12 @@ FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "M
         <button
           onClick={isConnected ? handleDisconnect : handleConnect}
           disabled={isConnecting}
-          className={`relative z-10 px-10 py-4 rounded-full font-medium text-lg transition-all duration-300 flex items-center gap-3 ${
+          className={`relative z-10 px-12 py-5 rounded-full font-medium text-xl transition-all duration-300 flex items-center gap-3 ${
             isConnected
-              ? 'bg-gray-800 text-white hover:bg-gray-700 shadow-lg'
+              ? 'bg-[#f4ead5] text-[#2a231a] hover:bg-white shadow-xl border-2 border-[#8b6914]'
               : isConnecting
               ? 'bg-gray-200 text-gray-500 cursor-wait'
-              : 'bg-black text-white hover:bg-gray-800 shadow-xl hover:shadow-2xl hover:scale-105'
+              : 'bg-[#f4ead5] text-[#2a231a] hover:bg-white shadow-xl hover:shadow-2xl hover:scale-105 border-2 border-[#8b6914]'
           }`}
         >
           {isConnecting ? (
@@ -671,17 +671,17 @@ FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "M
         </button>
       </div>
 
-      {/* Waveform Animation */}
-      <div className="flex items-center justify-center gap-[2px] h-10 w-48 mb-4">
+      {/* Waveform Animation - WHITE for dark background */}
+      <div className="flex items-center justify-center gap-[3px] h-16 w-64 mb-6">
         {waveHeights.map((height, i) => (
           <div
             key={i}
-            className={`w-[2px] rounded-full transition-all duration-100 ${
+            className={`w-[3px] rounded-full transition-all duration-100 ${
               isPlaying
-                ? 'bg-black'
+                ? 'bg-white'
                 : isConnected
-                ? 'bg-gray-700'
-                : 'bg-gray-400'
+                ? 'bg-white/80'
+                : 'bg-white/50'
             }`}
             style={{
               height: `${isPlaying ? Math.min(height * 1.3, 100) : height}%`,
@@ -691,10 +691,10 @@ FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "M
         ))}
       </div>
 
-      {/* Status Text - clickable when not connected */}
+      {/* Status Text - WHITE for dark background */}
       {isConnected || isConnecting ? (
-        <p className={`text-base md:text-lg font-serif mb-4 text-center transition-all ${
-          isPlaying ? 'text-black font-semibold' : 'text-gray-600'
+        <p className={`text-lg md:text-xl font-serif mb-6 text-center transition-all ${
+          isPlaying ? 'text-white font-semibold' : 'text-white/80'
         }`}>
           {isConnecting
             ? "Connecting to VIC..."
@@ -705,8 +705,8 @@ FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "M
       ) : (
         <button
           onClick={handleConnect}
-          className={`text-base md:text-lg font-serif mb-4 text-center transition-all cursor-pointer hover:text-black ${
-            isError ? 'text-red-600' : 'text-gray-600'
+          className={`text-lg md:text-xl font-serif mb-6 text-center transition-all cursor-pointer hover:text-white ${
+            isError ? 'text-red-400' : 'text-white/70'
           }`}
         >
           {isError
