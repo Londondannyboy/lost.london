@@ -21,18 +21,25 @@ interface VictorianTranscriptProps {
   messages: HumeMessage[]
   isConnected: boolean
   showDebug?: boolean
+  userName?: string
 }
 
-export function VictorianTranscript({ messages, isConnected, showDebug = false }: VictorianTranscriptProps) {
+export function VictorianTranscript({ messages, isConnected, showDebug = false, userName }: VictorianTranscriptProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [validationLogs, setValidationLogs] = useState<ValidationLog[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [debugExpanded, setDebugExpanded] = useState(true)
+  const [clearedIndex, setClearedIndex] = useState(0)
 
-  // Filter to only user and assistant messages
-  const conversationMessages = messages.filter(
+  // Filter to only user and assistant messages, after clear index
+  const allConversationMessages = messages.filter(
     m => m.type === 'user_message' || m.type === 'assistant_message'
   )
+  const conversationMessages = allConversationMessages.slice(clearedIndex)
+
+  const handleClearTranscript = () => {
+    setClearedIndex(allConversationMessages.length)
+  }
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -130,19 +137,35 @@ export function VictorianTranscript({ messages, isConnected, showDebug = false }
                 letterSpacing: '0.1em',
               }}
             >
-              ⚜ Ye Olde Discourse ⚜
+              {userName ? `${userName}'s Discourse` : '⚜ Ye Olde Discourse ⚜'}
             </h2>
             <p style={{ fontFamily: 'Georgia, serif', fontSize: '0.7rem', color: '#a89878', marginTop: '2px' }}>
               A Record of Conversations
             </p>
           </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-2 hover:opacity-70 transition-opacity"
-            style={{ color: '#f4ead5', fontSize: '1.2rem' }}
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {conversationMessages.length > 0 && (
+              <button
+                onClick={handleClearTranscript}
+                className="px-3 py-1 text-xs hover:opacity-80 transition-opacity rounded"
+                style={{
+                  background: '#654321',
+                  color: '#f4ead5',
+                  fontFamily: 'Georgia, serif',
+                }}
+                title="Clear transcript"
+              >
+                Clear
+              </button>
+            )}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-2 hover:opacity-70 transition-opacity"
+              style={{ color: '#f4ead5', fontSize: '1.2rem' }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Content */}

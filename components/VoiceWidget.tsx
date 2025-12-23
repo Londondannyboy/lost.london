@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { VoiceProvider, useVoice } from '@humeai/voice-react'
+import { authClient } from '@/lib/auth/client'
 import {
   getUserId,
   getUserProfile,
@@ -52,6 +53,8 @@ function ArticleCard({ article }: { article: Article }) {
 
 function VoiceInterface({ accessToken }: { accessToken: string }) {
   const { connect, disconnect, status, messages, sendToolMessage, isPlaying } = useVoice()
+  const { data: session, isPending: authLoading } = authClient.useSession()
+  const user = session?.user || null
   const [manualConnected, setManualConnected] = useState(false)
   const [waveHeights, setWaveHeights] = useState<number[]>([])
   const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null)
@@ -60,17 +63,28 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
   const conversationIdRef = useRef<string>('')
   const topicsDiscussedRef = useRef<string[]>([])
 
-  // Get user ID and profile on mount
+  // Get user ID - prefer authenticated user, fallback to localStorage
   useEffect(() => {
-    const id = getUserId()
+    // Use authenticated user ID if available, otherwise fall back to localStorage
+    const id = user?.id || getUserId()
     setUserId(id)
-    if (id) {
+
+    // If authenticated, also include user's name in profile
+    if (user) {
+      const authProfile: UserProfile = {
+        isReturningUser: true,
+        userName: user.name || undefined,
+        source: 'supermemory',
+      }
+      setUserProfile(authProfile)
+      console.log('[VIC] Authenticated user:', user.name || user.email)
+    } else if (id) {
       getUserProfile(id).then(profile => {
         setUserProfile(profile)
         console.log('[VIC] User profile:', profile.isReturningUser ? 'Returning user' : 'New user')
       })
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     if (status.value === 'connected') setManualConnected(true)
@@ -703,6 +717,7 @@ FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "M
         messages={messages}
         isConnected={isConnected}
         showDebug={true}
+        userName={user?.name || userProfile?.userName}
       />
     </div>
   )

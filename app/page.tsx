@@ -1,6 +1,7 @@
 import { VoiceWidget } from '@/components/VoiceWidget'
 import { FeaturedArticles } from '@/components/FeaturedArticles'
 import { SearchBar } from '@/components/SearchBar'
+import { UserButton } from '@/components/UserButton'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -19,10 +20,11 @@ export default function HomePage() {
           <Link href="/" className="font-bold text-xl tracking-tight">
             lost.london
           </Link>
-          <nav className="flex gap-6 text-sm text-gray-600">
+          <nav className="flex items-center gap-6 text-sm text-gray-600">
             <Link href="/thorney-island" className="hover:text-black transition-colors">Book</Link>
             <Link href="/series/lost-london" className="hover:text-black transition-colors">Articles</Link>
             <Link href="/map" className="hover:text-black transition-colors">Map</Link>
+            <UserButton />
           </nav>
         </div>
       </header>
