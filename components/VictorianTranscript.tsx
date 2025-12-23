@@ -29,16 +29,26 @@ export function VictorianTranscript({ messages, isConnected, showDebug = false, 
   const [validationLogs, setValidationLogs] = useState<ValidationLog[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [debugExpanded, setDebugExpanded] = useState(true)
-  const [clearedIndex, setClearedIndex] = useState(0)
+  const [sessionStartIndex, setSessionStartIndex] = useState(0)
+  const wasConnectedRef = useRef(false)
 
-  // Filter to only user and assistant messages, after clear index
+  // Filter to only user and assistant messages from current session
   const allConversationMessages = messages.filter(
     m => m.type === 'user_message' || m.type === 'assistant_message'
   )
-  const conversationMessages = allConversationMessages.slice(clearedIndex)
+  const conversationMessages = allConversationMessages.slice(sessionStartIndex)
+
+  // Auto-clear when a new connection starts
+  useEffect(() => {
+    if (isConnected && !wasConnectedRef.current) {
+      // Just connected - start fresh, ignore old messages
+      setSessionStartIndex(allConversationMessages.length)
+    }
+    wasConnectedRef.current = isConnected
+  }, [isConnected, allConversationMessages.length])
 
   const handleClearTranscript = () => {
-    setClearedIndex(allConversationMessages.length)
+    setSessionStartIndex(allConversationMessages.length)
   }
 
   // Auto-scroll to bottom on new messages
