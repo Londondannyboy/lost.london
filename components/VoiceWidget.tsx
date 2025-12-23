@@ -366,12 +366,19 @@ PHONETIC HELP
 FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "My articles don't cover that specific detail" and share what you DO have.`
 
     try {
+      // Encode user name in session ID so CLM can access it
+      // Format: "name|userId" - CLM will parse this
+      const sessionIdWithName = firstName
+        ? `${firstName}|${userId}`
+        : userId
+
       await connect({
         auth: { type: 'accessToken', value: accessToken },
         configId: configId,
         sessionSettings: {
           type: 'session_settings' as const,
           systemPrompt,
+          customSessionId: sessionIdWithName,
           // Tools are now configured in Hume dashboard, not here
         }
       })
