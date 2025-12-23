@@ -201,7 +201,7 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
             console.warn('[VIC Tool] Unknown tool:', name)
             sendToolMessage({
               type: 'tool_error',
-              tool_call_id: toolCallId,
+              toolCallId: toolCallId,
               error: `Unknown tool: ${name}`,
               content: '',
             })
@@ -212,14 +212,14 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
         // Use snake_case for tool_call_id as per Hume API spec
         sendToolMessage({
           type: 'tool_response',
-          tool_call_id: toolCallId,
+          toolCallId: toolCallId,
           content: JSON.stringify(result),
         })
       } catch (error) {
         console.error('[VIC Tool] Error:', error)
         sendToolMessage({
           type: 'tool_error',
-          tool_call_id: toolCallId,
+          toolCallId: toolCallId,
           error: 'Tool execution failed',
           content: '',
         })
