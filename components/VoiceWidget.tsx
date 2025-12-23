@@ -87,7 +87,7 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
 
     // Check for tool_call in various formats Hume might send
     const isToolCall = lastMessage.type === 'tool_call' ||
-                       lastMessage.type === 'tool_call_message' ||
+                       (lastMessage as any).type === 'tool_call_message' ||
                        (lastMessage as any).tool_call_id
 
     if (!isToolCall) return
