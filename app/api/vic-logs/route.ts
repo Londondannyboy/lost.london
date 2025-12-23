@@ -1,15 +1,13 @@
 import { neon } from '@neondatabase/serverless'
 import { NextRequest, NextResponse } from 'next/server'
 
-const sql = neon(process.env.DATABASE_URL!)
-
 export async function GET(request: NextRequest) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '10')
-    const sessionId = searchParams.get('session_id')
 
-    let query = `
+    const logs = await sql`
       SELECT
         id,
         created_at,
@@ -26,19 +24,9 @@ export async function GET(request: NextRequest) {
       FROM vic_validation_logs
       WHERE user_query NOT LIKE '%silent%'
         AND user_query NOT LIKE '%greeting%'
+      ORDER BY created_at DESC
+      LIMIT ${limit}
     `
-
-    const params: any[] = []
-
-    if (sessionId) {
-      query += ` AND session_id = $1`
-      params.push(sessionId)
-    }
-
-    query += ` ORDER BY created_at DESC LIMIT $${params.length + 1}`
-    params.push(limit)
-
-    const logs = await sql(query, params)
 
     return NextResponse.json({
       logs,
