@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Search for ALL memories for this user
+    // Note: Supermemory doesn't support wildcard '*', use broad search terms
     const searchResponse = await fetch(`${SUPERMEMORY_API}/v4/search`, {
       method: 'POST',
       headers: {
@@ -27,9 +28,9 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        q: '*', // Match all
+        q: 'topic interest article viewed search conversation user name preference test',
         containerTags: [userId],
-        limit: 50, // Get lots of results
+        limit: 50,
       }),
     })
 
