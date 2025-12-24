@@ -518,19 +518,14 @@ FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "M
       setManualConnected(true)
       console.log('[VIC Session] Connected successfully')
 
-      // Send personalized greeting ourselves (Hume's auto-greeting ignores our system prompt)
-      // Small delay to ensure connection is stable
+      // Trigger VIC to speak using the personalized greeting from system prompt
+      // sendAssistantInput only adds text silently - we need sendUserInput to trigger speech
+      // The system prompt already tells VIC exactly how to greet based on name/interests
       setTimeout(() => {
-        let greeting: string
-        if (firstName && lastTopics.length > 0) {
-          greeting = `Welcome back ${firstName}! Last time you were exploring ${lastTopics[0]}. Shall we continue with that, or discover something new today?`
-        } else if (firstName) {
-          greeting = `Hello ${firstName}, lovely to meet you! I'm VIC, your guide to London's hidden history. What would you like to explore?`
-        } else {
-          greeting = `Hello! I'm VIC, your guide to London's hidden history. What should I call you?`
-        }
-        console.log('[VIC Session] Sending personalized greeting:', greeting)
-        sendAssistantInput(greeting)
+        console.log('[VIC Session] Triggering greeting - firstName:', firstName, 'topics:', lastTopics)
+        // Send a minimal trigger that prompts VIC to greet
+        // The system prompt handles the actual personalized greeting
+        sendUserInput("Hello")
       }, 500)
 
     } catch (e: any) {
