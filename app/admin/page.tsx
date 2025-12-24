@@ -23,6 +23,9 @@ interface Amendment {
   article_title: string
   reason: string
   created_at: string
+  status: string
+  source: string
+  applied_to_cache: boolean
 }
 
 export default function AdminPage() {
@@ -34,8 +37,59 @@ export default function AdminPage() {
   const [correctionText, setCorrectionText] = useState('')
   const [correctionReason, setCorrectionReason] = useState('')
   const [saving, setSaving] = useState(false)
+  const [approving, setApproving] = useState<number | null>(null)
 
   const isAdmin = session?.user?.role === 'admin'
+
+  // Filter voice corrections that are pending
+  const pendingVoiceCorrections = amendments.filter(
+    a => a.source === 'voice_feedback' && a.status === 'pending'
+  )
+
+  const handleApproveCorrection = async (amendment: Amendment) => {
+    setApproving(amendment.id)
+    try {
+      const res = await fetch(`/api/admin/amendments/${amendment.id}/approve`, {
+        method: 'POST',
+      })
+
+      if (res.ok) {
+        // Update local state
+        setAmendments(prev => prev.map(a =>
+          a.id === amendment.id ? { ...a, status: 'approved', applied_to_cache: true } : a
+        ))
+        alert('Correction approved and applied to cache!')
+      } else {
+        const data = await res.json()
+        alert(`Failed to approve: ${data.error}`)
+      }
+    } catch (e) {
+      console.error('Failed to approve correction:', e)
+      alert('Failed to approve correction')
+    } finally {
+      setApproving(null)
+    }
+  }
+
+  const handleRejectCorrection = async (amendment: Amendment) => {
+    setApproving(amendment.id)
+    try {
+      const res = await fetch(`/api/admin/amendments/${amendment.id}/reject`, {
+        method: 'POST',
+      })
+
+      if (res.ok) {
+        setAmendments(prev => prev.map(a =>
+          a.id === amendment.id ? { ...a, status: 'rejected' } : a
+        ))
+        alert('Correction rejected')
+      }
+    } catch (e) {
+      console.error('Failed to reject correction:', e)
+    } finally {
+      setApproving(null)
+    }
+  }
 
   useEffect(() => {
     if (!isAdmin) return
@@ -163,6 +217,47 @@ export default function AdminPage() {
             </p>
           </div>
         </div>
+
+        {/* Pending Voice Corrections */}
+        {pendingVoiceCorrections.length > 0 && (
+          <div className="mb-8 bg-amber-50 border border-amber-200 rounded-lg shadow">
+            <div className="p-4 border-b border-amber-200">
+              <h2 className="font-bold text-amber-800">Pending Voice Corrections</h2>
+              <p className="text-sm text-amber-600">Vic spoke these corrections - review and approve to update the knowledge base</p>
+            </div>
+            <div className="max-h-[300px] overflow-y-auto">
+              {pendingVoiceCorrections.map(correction => (
+                <div key={correction.id} className="p-4 border-b border-amber-100 last:border-b-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800">{correction.amended_text}</p>
+                      <p className="text-xs text-gray-500 mt-1">{correction.reason}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(correction.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => handleApproveCorrection(correction)}
+                        disabled={approving === correction.id}
+                        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {approving === correction.id ? '...' : 'Approve'}
+                      </button>
+                      <button
+                        onClick={() => handleRejectCorrection(correction)}
+                        disabled={approving === correction.id}
+                        className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-6">
           {/* Recent Responses */}

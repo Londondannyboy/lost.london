@@ -15,7 +15,9 @@ export async function GET() {
         reason,
         created_at,
         applied_to_zep,
-        applied_to_cache
+        applied_to_cache,
+        COALESCE(status, 'pending') as status,
+        COALESCE(source, 'admin_correction') as source
       FROM vic_amendments
       ORDER BY created_at DESC
       LIMIT 100
