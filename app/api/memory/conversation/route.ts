@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing required fields' })
     }
 
+    // Store the conversation
     const response = await fetch(`${SUPERMEMORY_API}/v4/conversations`, {
       method: 'POST',
       headers: {
@@ -43,7 +44,35 @@ export async function POST(request: NextRequest) {
     })
 
     if (!response.ok) {
-      throw new Error(`Supermemory API error: ${response.status}`)
+      console.error('[Memory] Conversation API error:', response.status)
+    }
+
+    // ALSO store topics as searchable documents so they show up in profile
+    // This ensures VIC can greet returning users with their interests
+    if (topicsDiscussed && topicsDiscussed.length > 0) {
+      const topicsContent = `User discussed topics: ${topicsDiscussed.join(', ')}`
+
+      await fetch(`${SUPERMEMORY_API}/v3/documents`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: topicsContent,
+          containerTag: userId,
+          metadata: {
+            userId,
+            type: 'conversation_topic',
+            topics: topicsDiscussed,
+            timestamp: new Date().toISOString(),
+            source: 'vic_lost_london',
+            conversationId,
+          },
+        }),
+      }).catch(e => console.error('[Memory] Failed to store topics:', e))
+
+      console.log('[Memory] Stored conversation topics:', topicsDiscussed)
     }
 
     return NextResponse.json({ success: true })

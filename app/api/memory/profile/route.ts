@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ isReturningUser: false })
     }
 
-    // Search for memories about this user, especially their name
+    // Search for ALL user memories - article views, interests, name, etc.
     const searchResponse = await fetch(`${SUPERMEMORY_API}/v4/search`, {
       method: 'POST',
       headers: {
@@ -24,9 +24,9 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        q: 'name interest preference',
+        q: 'article viewed interest topic name preference search',
         containerTags: [userId],
-        limit: 10,
+        limit: 30, // Get more to capture article views
       }),
     })
 
@@ -38,38 +38,81 @@ export async function POST(request: NextRequest) {
     const searchData = await searchResponse.json()
     const memories = searchData.results || []
 
+    console.log('[Memory] Found memories for user:', memories.length)
+
     if (memories.length === 0) {
       // No memories = new user
       return NextResponse.json({ isReturningUser: false })
     }
 
-    // Extract name from memories
+    // Extract name and interests from memories
     let userName = ''
     const interests: string[] = []
     const preferences: string[] = []
+    const articleTitles: string[] = []
+    const seenCategories = new Set<string>()
 
     for (const memory of memories) {
       const content = memory.content || ''
       const type = memory.metadata?.type || ''
+      const categories = memory.metadata?.categories || []
 
+      // Extract user name
       if (type === 'name' || content.toLowerCase().includes('name is')) {
-        // Extract name from content like "[NAME] User's name is Dan"
         const nameMatch = content.match(/name is (\w+)/i)
         if (nameMatch) {
           userName = nameMatch[1]
         }
-      } else if (type === 'interest') {
+      }
+
+      // Extract interests from explicit interest memories
+      if (type === 'interest') {
         interests.push(content.replace('[INTEREST] ', ''))
-      } else if (type === 'preference') {
+      }
+
+      // Extract interests from article views - use categories as topics
+      if (type === 'article_view') {
+        // Get article title for context
+        const titleMatch = content.match(/viewed article: "([^"]+)"/)
+        if (titleMatch && articleTitles.length < 5) {
+          articleTitles.push(titleMatch[1])
+        }
+
+        // Get categories as interests
+        if (Array.isArray(categories)) {
+          categories.forEach((cat: string) => {
+            if (cat && !seenCategories.has(cat.toLowerCase())) {
+              seenCategories.add(cat.toLowerCase())
+              interests.push(cat)
+            }
+          })
+        }
+      }
+
+      // Extract topics from conversation memories
+      if (type === 'conversation_topic' || type === 'topic_interest') {
+        const topics = memory.metadata?.topics || [memory.metadata?.topic]
+        topics.forEach((topic: string) => {
+          if (topic && !interests.includes(topic)) {
+            interests.push(topic)
+          }
+        })
+      }
+
+      // Extract preferences
+      if (type === 'preference') {
         preferences.push(content.replace('[PREFERENCE] ', ''))
       }
     }
 
+    console.log('[Memory] Extracted - interests:', interests.length, 'articles:', articleTitles.length)
+
     return NextResponse.json({
       isReturningUser: true,
       userName,
-      interests,
+      interests: interests.slice(0, 10), // Top 10 interests
       preferences,
+      recentArticles: articleTitles,
       memoryCount: memories.length,
     })
   } catch (error) {
