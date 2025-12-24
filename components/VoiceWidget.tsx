@@ -383,10 +383,14 @@ FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "M
 
     try {
       // Encode user name in session ID so CLM can access it
-      // Format: "name|userId" - CLM will parse this
+      // Format: "name|uniqueId" - CLM will parse this
+      // Add timestamp to prevent Hume session caching issues between users
+      const uniqueSessionId = `${userId}_${Date.now()}`
       const sessionIdWithName = firstName
-        ? `${firstName}|${userId}`
-        : userId
+        ? `${firstName}|${uniqueSessionId}`
+        : uniqueSessionId
+
+      console.log('[VIC Session] Creating session:', { firstName, uniqueSessionId, sessionIdWithName })
 
       await connect({
         auth: { type: 'accessToken', value: accessToken },

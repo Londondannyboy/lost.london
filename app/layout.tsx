@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { authClient } from '@/lib/auth/client'
 import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui'
+import { BetaBadge } from '@/components/BetaBadge'
+import { ConsentBanner } from '@/components/ConsentBanner'
 
 export const metadata: Metadata = {
   title: "Lost London | Discover London's Hidden Stories",
@@ -30,7 +32,9 @@ export default function RootLayout({
           redirectTo="/"
           social={{ providers: ['google', 'github'] }}
         >
+          <BetaBadge />
           {children}
+          <ConsentBanner />
         </NeonAuthUIProvider>
       </body>
     </html>

@@ -1,12 +1,25 @@
 import { neon } from '@neondatabase/serverless'
 import { NextRequest, NextResponse } from 'next/server'
+import { neonAuth } from '@neondatabase/neon-js/auth/next'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Verify admin access
+    const { user } = await neonAuth()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     const sql = neon(process.env.DATABASE_URL!)
+
+    // Check if user is admin
+    const [dbUser] = await sql`SELECT role FROM neon_auth.user WHERE id = ${user.id}` as { role: string }[]
+    if (dbUser?.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
     const { id } = await params
 
     // Get the amendment
