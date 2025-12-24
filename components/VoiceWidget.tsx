@@ -60,6 +60,7 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
   const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [userId, setUserId] = useState<string>('')
+  const [preferredName, setPreferredName] = useState<string | null>(null)
   const conversationIdRef = useRef<string>('')
   const topicsDiscussedRef = useRef<string[]>([])
 
@@ -83,6 +84,21 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
         setUserProfile(profile)
         console.log('[VIC] User profile:', profile.isReturningUser ? 'Returning user' : 'New user')
       })
+    }
+  }, [user])
+
+  // Fetch preferred name for authenticated users
+  useEffect(() => {
+    if (user) {
+      fetch('/api/user/preferred-name')
+        .then(res => res.json())
+        .then(data => {
+          if (data.preferred_name) {
+            setPreferredName(data.preferred_name)
+            console.log('[VIC] Preferred name:', data.preferred_name)
+          }
+        })
+        .catch(console.error)
     }
   }, [user])
 
@@ -282,15 +298,15 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
       return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()
     }
 
-    const firstName = extractFirstName(user?.name)
+    // Use preferred name if set, otherwise extract from display name
+    const extractedFirstName = extractFirstName(user?.name)
+    const firstName = preferredName || extractedFirstName
     const hasValidName = !!firstName
 
-    // Debug logging - check all possible name fields
-    console.log('[VIC Auth] Full user object:', JSON.stringify(user, null, 2))
-    console.log('[VIC Auth] user.name:', user?.name)
-    console.log('[VIC Auth] user.displayName:', (user as any)?.displayName)
-    console.log('[VIC Auth] user.firstName:', (user as any)?.firstName)
-    console.log('[VIC Auth] Extracted first name:', firstName)
+    // Debug logging
+    console.log('[VIC Auth] Preferred name:', preferredName)
+    console.log('[VIC Auth] Extracted from display:', extractedFirstName)
+    console.log('[VIC Auth] Using name:', firstName)
 
     // Get personalized greeting for returning users
     const personalizedGreeting = userProfile ? generatePersonalizedGreeting(userProfile) : ''
