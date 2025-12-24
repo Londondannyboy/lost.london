@@ -348,6 +348,32 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
     conversationIdRef.current = `conv_${Date.now()}`
     topicsDiscussedRef.current = []
 
+    // PRE-FETCH: Get user's memory/history BEFORE connecting
+    // This lets VIC immediately greet with personalized context (no search needed)
+    let userMemoryContext = ''
+    let lastTopics: string[] = []
+    if (userId) {
+      try {
+        const memoryResponse = await fetch(`/api/memory/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        })
+        if (memoryResponse.ok) {
+          const memoryData = await memoryResponse.json()
+          if (memoryData.isReturningUser) {
+            if (memoryData.interests?.length > 0) {
+              lastTopics = memoryData.interests.slice(0, 3)
+              userMemoryContext = `\nUSER'S PREVIOUS INTERESTS: ${lastTopics.join(', ')}`
+            }
+            console.log('[VIC Memory] Returning user with interests:', lastTopics)
+          }
+        }
+      } catch (e) {
+        console.debug('[VIC Memory] Pre-fetch failed:', e)
+      }
+    }
+
     // Extract first name from authenticated user
     // Takes first word of display name, validates it's name-like (not email)
     const extractFirstName = (displayName: string | null | undefined): string | null => {
@@ -391,10 +417,15 @@ You can ONLY state facts that appear WORD-FOR-WORD in search results. If a name,
 
 You are VIC, the voice of Vic Keegan — a London historian with 370+ articles about the city's hidden stories.
 
-${hasValidName ? `USER'S NAME: ${firstName}
-Greet them warmly by name. Say something like "Hello ${firstName}, lovely to meet you!" or "Welcome back, ${firstName}!"
-Do NOT ask for their name - you already know it.` : isReturning ? `RETURNING USER: ${personalizedGreeting}
-Greet them by name. Acknowledge what you discussed before.` : `NEW VISITOR: Introduce yourself briefly, then ask: "What should I call you?" When they answer, use remember_user tool to save their name.`}
+${hasValidName && lastTopics.length > 0 ? `RETURNING USER: ${firstName}
+${userMemoryContext}
+START IMMEDIATELY with: "Welcome back ${firstName}! Last time you were exploring ${lastTopics[0]}. Shall we continue with that, or discover something new today?"
+Do NOT do a long introduction. Do NOT search before greeting. Just greet them personally using the context above.` : hasValidName ? `USER'S NAME: ${firstName}
+Greet them warmly: "Hello ${firstName}, lovely to meet you! I'm VIC. What aspect of London's hidden history shall we explore?"
+Keep the intro SHORT - one sentence greeting, then ask what they'd like to know.` : isReturning ? `RETURNING USER: ${personalizedGreeting}
+${userMemoryContext}
+Greet them warmly and acknowledge you remember them. If you have their interests above, mention one.` : `NEW VISITOR: Say "Hello! I'm VIC, your guide to London's hidden history. What should I call you?"
+Keep it SHORT. Don't give a long intro - just ask their name first.`}
 
 ROSIE EXCEPTION: If they say "Rosie", respond: "Ah, Rosie, my loving wife! I'll be home for dinner."
 
