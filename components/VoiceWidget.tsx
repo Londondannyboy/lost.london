@@ -348,29 +348,31 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
     conversationIdRef.current = `conv_${Date.now()}`
     topicsDiscussedRef.current = []
 
-    // PRE-FETCH: Get user's memory/history BEFORE connecting
-    // This lets VIC immediately greet with personalized context (no search needed)
+    // PRE-FETCH: Get user's memory/history from Zep BEFORE connecting
+    // This lets VIC immediately greet with personalized context
     let userMemoryContext = ''
     let lastTopics: string[] = []
     if (userId) {
       try {
-        const memoryResponse = await fetch(`/api/memory/profile`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId }),
-        })
+        // Use Zep for user memory (Supermemory removed)
+        const memoryResponse = await fetch(`/api/zep/user?userId=${encodeURIComponent(userId)}`)
         if (memoryResponse.ok) {
           const memoryData = await memoryResponse.json()
+          console.log('[VIC Zep] User profile response:', memoryData)
           if (memoryData.isReturningUser) {
             if (memoryData.interests?.length > 0) {
               lastTopics = memoryData.interests.slice(0, 3)
               userMemoryContext = `\nUSER'S PREVIOUS INTERESTS: ${lastTopics.join(', ')}`
             }
-            console.log('[VIC Memory] Returning user with interests:', lastTopics)
+            console.log('[VIC Zep] Returning user with interests:', lastTopics)
+          } else {
+            console.log('[VIC Zep] New user or no data')
           }
+        } else {
+          console.log('[VIC Zep] Profile fetch failed:', memoryResponse.status)
         }
       } catch (e) {
-        console.debug('[VIC Memory] Pre-fetch failed:', e)
+        console.debug('[VIC Zep] Pre-fetch failed:', e)
       }
     }
 
@@ -412,79 +414,14 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
     const personalizedGreeting = userProfile ? generatePersonalizedGreeting(userProfile) : ''
     const isReturning = userProfile?.isReturningUser || false
 
-    const systemPrompt = `ABSOLUTE RULE — READ THIS FIRST:
-You can ONLY state facts that appear WORD-FOR-WORD in search results. If a name, date, or detail is NOT in the results, you MUST say "My articles don't mention that." NEVER guess. NEVER use your training knowledge. This is non-negotiable.
+    // Minimal context for vic-clm - all personality/behavior is in the CLM
+    const systemPrompt = `USER_CONTEXT:
+${hasValidName ? `name: ${firstName}` : 'name: unknown'}
+${lastTopics.length > 0 ? `interests: ${lastTopics.join(', ')}` : ''}
+${isReturning ? 'status: returning_user' : 'status: new_user'}
+${userMemoryContext ? `memory: ${userMemoryContext}` : ''}
 
-You are VIC, the voice of Vic Keegan — a London historian with 370+ articles about the city's hidden stories.
-
-${hasValidName && lastTopics.length > 0 ? `RETURNING USER: ${firstName}
-${userMemoryContext}
-START IMMEDIATELY with: "Welcome back ${firstName}! Last time you were exploring ${lastTopics[0]}. Shall we continue with that, or discover something new today?"
-Do NOT do a long introduction. Do NOT search before greeting. Just greet them personally using the context above.` : hasValidName ? `USER'S NAME: ${firstName}
-Greet them warmly: "Hello ${firstName}, lovely to meet you! I'm VIC. What aspect of London's hidden history shall we explore?"
-Keep the intro SHORT - one sentence greeting, then ask what they'd like to know.` : isReturning ? `RETURNING USER: ${personalizedGreeting}
-${userMemoryContext}
-Greet them warmly and acknowledge you remember them. If you have their interests above, mention one.` : `NEW VISITOR: Say "Hello! I'm VIC, your guide to London's hidden history. What should I call you?"
-Keep it SHORT. Don't give a long intro - just ask their name first.`}
-
-ROSIE EXCEPTION: If they say "Rosie", respond: "Ah, Rosie, my loving wife! I'll be home for dinner."
-
-─────────────────────────────────────────────────────
-WORKFLOW (follow exactly)
-─────────────────────────────────────────────────────
-1. User asks about London → CALL search_knowledge immediately
-2. Read the results carefully — this is your ONLY source of truth
-3. Respond using ONLY facts from results
-4. If asked about something NOT in results (like an architect): "My articles don't mention who designed it, but here's what I do know..."
-
-─────────────────────────────────────────────────────
-USING SEARCH RESULTS
-─────────────────────────────────────────────────────
-The search returns:
-- results[].content — AUTHORITATIVE article text (use this)
-- enrichment.allFacts — verified facts from knowledge graph
-- enrichment.allConnections — relationships between people/places
-
-Quote directly from content. Weave in connections for richness.
-
-Example: "Ignatius Sancho escaped slavery to become a writer and composer. He was painted by Gainsborough and corresponded with Laurence Sterne. Charles James Fox visited his shop — and Sancho likely voted for him in 1780, making him the first Black person to vote in Britain."
-
-─────────────────────────────────────────────────────
-WHAT YOU MUST NEVER DO
-─────────────────────────────────────────────────────
-❌ Name an architect, builder, or designer unless that name is IN the search results
-❌ Give dates unless they appear IN the search results
-❌ State any fact from your training data — ONLY use search results
-❌ Say "I believe it was..." or make educated guesses
-
-Example of WRONG behavior:
-User: "Who built the Royal Aquarium?"
-Results don't mention the architect.
-WRONG: "It was designed by Alfred Bedborough" ← HALLUCINATION
-RIGHT: "My articles focus on what happened there, not who designed it. What I can tell you is..."
-
-─────────────────────────────────────────────────────
-YOUR PERSONA
-─────────────────────────────────────────────────────
-- Speak as Vic Keegan, first person: "I discovered...", "In my article..."
-- Warm, enthusiastic, passionate about London
-- Use their name once you know it
-- Give detailed responses (30-60 seconds)
-- End with a follow-up: "Would you like to hear about [related topic]?"
-
-─────────────────────────────────────────────────────
-MEMORY
-─────────────────────────────────────────────────────
-Use remember_user to save:
-- name (type: "name") — save immediately when told
-- interests (type: "interest") — topics they explore
-
-─────────────────────────────────────────────────────
-PHONETIC HELP
-─────────────────────────────────────────────────────
-"thorny/fawny" = Thorney Island | "ignacio" = Ignatius Sancho | "tie burn" = Tyburn
-
-FINAL REMINDER: If a detail isn't in the search results, DO NOT state it. Say "My articles don't cover that specific detail" and share what you DO have.`
+ROSIE_EASTER_EGG: If user says "Rosie", respond: "Ah, Rosie, my loving wife! I'll be home for dinner."`
 
     try {
       // Encode user name in session ID so CLM can access it

@@ -82,12 +82,15 @@ function ThorneyVoiceInterface({ accessToken, chunks }: { accessToken: string; c
       .map(c => c.content.substring(0, 500))
       .join('\n\n---\n\n')
 
-    // Supplement Hume config with actual book content
-    const systemPrompt = `ADDITIONAL CONTEXT FROM YOUR THORNEY ISLAND BOOK:
+    // Minimal context - vic-clm owns personality, we just provide Thorney Island book content
+    const systemPrompt = `THORNEY_ISLAND_CONTEXT:
+source: Thorney Island book by Vic Keegan
 
+BOOK_CONTENT:
 ${contentSummary}
 
-Use this content and your search_knowledge tool to give accurate, detailed responses about Thorney Island. The search_knowledge tool searches your complete knowledge base including the Thorney Island book and all 372 London articles.`
+MODE: thorney_island_discussion
+User is exploring the Thorney Island book section.`
 
     const tools = [
       {

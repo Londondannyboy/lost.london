@@ -1,15 +1,11 @@
 /**
- * Hybrid Memory System for VIC
+ * Memory System for VIC
  *
- * Combines multiple systems for best results:
- * - Supermemory: Simple, free user memory for anonymous sessions
- * - Zep: Automatic fact extraction + knowledge graph
- * - pgvector: Full article content search
- *
- * This gives us:
- * - Rich article content (pgvector)
- * - Entity relationships (Zep graph)
- * - Persistent user memory (Supermemory + Zep)
+ * Uses Zep Cloud for all memory:
+ * - Automatic fact extraction from conversations
+ * - Knowledge graph for entity relationships
+ * - User memory and preferences
+ * - pgvector in vic-clm for article search
  */
 
 export interface UserProfile {
@@ -17,7 +13,7 @@ export interface UserProfile {
   userName?: string;
   interests?: string[];
   preferences?: string[];
-  source: 'supermemory' | 'zep' | 'both';
+  source: 'zep';
 }
 
 export interface SearchResult {
@@ -54,70 +50,31 @@ export function getUserId(): string {
 }
 
 /**
- * Get user profile from BOTH Supermemory and Zep
- * Returns combined/best data from both sources
+ * Get user profile from Zep Cloud
  */
 export async function getUserProfile(userId: string): Promise<UserProfile> {
   if (!userId) {
-    return { isReturningUser: false, source: 'supermemory' };
+    return { isReturningUser: false, source: 'zep' };
   }
 
-  // Query both in parallel
-  const [supermemoryProfile, zepProfile] = await Promise.all([
-    getSupermemoryProfile(userId),
-    getZepProfile(userId),
-  ]);
-
-  // Combine results - prefer data from whichever has more
-  const hasSupermemory = supermemoryProfile.isReturningUser;
-  const hasZep = zepProfile.isReturningUser;
-
-  if (!hasSupermemory && !hasZep) {
-    return { isReturningUser: false, source: 'supermemory' };
-  }
-
-  // Merge data from both sources
-  return {
-    isReturningUser: true,
-    userName: supermemoryProfile.userName || zepProfile.userName,
-    interests: [
-      ...(supermemoryProfile.interests || []),
-      ...(zepProfile.interests || []),
-    ].filter((v, i, a) => a.indexOf(v) === i).slice(0, 5), // Unique, max 5
-    preferences: supermemoryProfile.preferences,
-    source: hasSupermemory && hasZep ? 'both' : hasSupermemory ? 'supermemory' : 'zep',
-  };
-}
-
-async function getSupermemoryProfile(userId: string): Promise<UserProfile> {
-  try {
-    const response = await fetch('/api/memory/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
-    });
-    if (!response.ok) return { isReturningUser: false, source: 'supermemory' };
-    const data = await response.json();
-    return { ...data, source: 'supermemory' };
-  } catch {
-    return { isReturningUser: false, source: 'supermemory' };
-  }
-}
-
-async function getZepProfile(userId: string): Promise<UserProfile> {
   try {
     const response = await fetch(`/api/zep/user?userId=${encodeURIComponent(userId)}`);
-    if (!response.ok) return { isReturningUser: false, source: 'zep' };
+    if (!response.ok) {
+      console.log('[VIC Memory] Zep profile fetch failed:', response.status);
+      return { isReturningUser: false, source: 'zep' };
+    }
     const data = await response.json();
+    console.log('[VIC Memory] Zep profile:', data);
     return { ...data, source: 'zep' };
-  } catch {
+  } catch (e) {
+    console.log('[VIC Memory] Zep profile error:', e);
     return { isReturningUser: false, source: 'zep' };
   }
 }
 
 /**
- * Store a memory about the user in Supermemory
- * (Explicit memory - name, interests, preferences)
+ * Store a memory about the user in Zep
+ * Zep automatically extracts facts from conversation context
  */
 export async function rememberAboutUser(
   userId: string,
@@ -126,16 +83,8 @@ export async function rememberAboutUser(
 ): Promise<boolean> {
   if (!userId || !memory) return false;
 
-  try {
-    const response = await fetch('/api/memory/remember', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, memory, type }),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
+  // Store as a message in Zep - it will extract facts automatically
+  return storeMessageInZep(userId, `User ${type}: ${memory}`, 'user');
 }
 
 /**
@@ -161,7 +110,8 @@ export async function storeMessageInZep(
 }
 
 /**
- * Store conversation in Supermemory (end of session)
+ * Store conversation in Zep (end of session)
+ * Zep automatically extracts facts and builds the knowledge graph
  */
 export async function storeConversation(
   userId: string,
@@ -171,13 +121,16 @@ export async function storeConversation(
 ): Promise<boolean> {
   if (!userId || messages.length === 0) return false;
 
+  // Store each message in Zep - it will extract facts automatically
   try {
-    const response = await fetch('/api/memory/conversation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, conversationId, messages, topicsDiscussed }),
-    });
-    return response.ok;
+    for (const msg of messages) {
+      await storeMessageInZep(userId, msg.content, msg.role);
+    }
+    // Also store topics as explicit interests
+    if (topicsDiscussed.length > 0) {
+      await storeMessageInZep(userId, `User discussed: ${topicsDiscussed.join(', ')}`, 'user');
+    }
+    return true;
   } catch {
     return false;
   }
