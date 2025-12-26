@@ -78,7 +78,7 @@ function VoiceInterface({ accessToken }: { accessToken: string }) {
       const authProfile: UserProfile = {
         isReturningUser: true,
         userName: user.name || undefined,
-        source: 'supermemory',
+        source: 'zep',
       }
       setUserProfile(authProfile)
       console.log('[VIC] Authenticated user:', user.name || user.email)
