@@ -31,13 +31,20 @@ export async function GET(request: NextRequest) {
 
     const client = new ZepClient({ apiKey });
 
-    // Search for facts about this user
-    const userFacts = await client.graph.search({
-      userId,
-      query: "user name interests preferences topics discussed",
-      limit: 20,
-      scope: "edges",
-    });
+    // Try to search for facts about this user
+    // This may fail if user doesn't exist yet - that's OK
+    let userFacts: { edges?: Array<{ fact?: string }> } = { edges: [] };
+    try {
+      userFacts = await client.graph.search({
+        userId,
+        query: "user name interests preferences topics discussed",
+        limit: 20,
+        scope: "edges",
+      });
+    } catch (searchError) {
+      // User may not exist yet or have no data - return empty profile
+      console.log("[Zep User] No facts found for user:", userId);
+    }
 
     // Extract user profile from facts
     const profile = {
@@ -51,10 +58,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(profile);
   } catch (error) {
     console.error("[Zep User] GET Error:", error);
-    return NextResponse.json(
-      { error: "Failed to get user profile", details: String(error) },
-      { status: 500 }
-    );
+    // Return empty profile instead of 500 - don't break the app
+    return NextResponse.json({
+      userId: "",
+      isReturningUser: false,
+      facts: [],
+      userName: undefined,
+      interests: [],
+    });
   }
 }
 
