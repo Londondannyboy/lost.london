@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import * as THREE from 'three'
 import type SpriteTextType from 'three-spritetext'
 
 // Dynamically import 3D graph with SSR disabled
@@ -47,6 +48,7 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
   const [dimensions, setDimensions] = useState({ width: 700, height: 400 })
   const [SpriteText, setSpriteText] = useState<typeof SpriteTextType | null>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
+  const rotationRef = useRef<number>(0)
 
   // Defer loading for performance
   useEffect(() => {
@@ -78,6 +80,29 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
     return () => window.removeEventListener('resize', updateSize)
   }, [height])
 
+  // Set up camera and auto-rotation after graph loads
+  useEffect(() => {
+    if (!graphRef.current || !shouldLoad) return
+
+    // Wait for graph to initialize
+    const timer = setTimeout(() => {
+      const fg = graphRef.current
+      if (!fg) return
+
+      // Zoom camera closer
+      fg.cameraPosition({ x: 0, y: 0, z: 120 })
+
+      // Start auto-rotation
+      const controls = fg.controls()
+      if (controls) {
+        controls.autoRotate = true
+        controls.autoRotateSpeed = 1.5
+      }
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [shouldLoad, SpriteText])
+
   // Build graph data from facts
   const graphData = useCallback(() => {
     const nodes: GraphNode[] = []
@@ -89,7 +114,7 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
       id: 'user',
       name: userName,
       group: 'user',
-      val: 30,
+      val: 25,
       color: groupColors.user
     })
 
@@ -112,7 +137,7 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
             id: topicId,
             name: topic,
             group: 'interest',
-            val: 15,
+            val: 12,
             color: groupColors.interest
           })
           links.push({ source: 'user', target: topicId, label: 'interested in' })
@@ -132,7 +157,7 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
             id: locId,
             name: location,
             group: 'location',
-            val: 12,
+            val: 10,
             color: groupColors.location
           })
           links.push({ source: 'user', target: locId, label: 'explored' })
@@ -147,18 +172,45 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
     }
   }, [facts, userName])
 
-  // Custom node object with text labels
+  // Custom node with sphere + floating label
   const nodeThreeObject = useCallback((node: any) => {
     if (!SpriteText) return null
 
+    // Create a group to hold sphere and label
+    const group = new THREE.Group()
+
+    // Create the sphere
+    const sphereRadius = node.group === 'user' ? 8 : 5
+    const geometry = new THREE.SphereGeometry(sphereRadius, 32, 32)
+    const material = new THREE.MeshLambertMaterial({
+      color: node.color || groupColors[node.group] || '#6366f1',
+      transparent: true,
+      opacity: 0.9
+    })
+    const sphere = new THREE.Mesh(geometry, material)
+    group.add(sphere)
+
+    // Create floating label below sphere
     const sprite = new SpriteText(node.name)
     sprite.color = '#ffffff'
-    sprite.textHeight = node.group === 'user' ? 4 : 3
-    sprite.backgroundColor = node.color || groupColors[node.group] || '#6366f1'
-    sprite.padding = 2
-    sprite.borderRadius = 4
-    return sprite
+    sprite.textHeight = node.group === 'user' ? 5 : 3.5
+    sprite.backgroundColor = 'rgba(0,0,0,0.6)'
+    sprite.padding = 1.5
+    sprite.borderRadius = 3
+    sprite.position.y = -(sphereRadius + 6) // Position below sphere
+    group.add(sprite)
+
+    return group
   }, [SpriteText])
+
+  // Animation tick for rotation
+  const onEngineTick = useCallback(() => {
+    if (!graphRef.current) return
+    const controls = graphRef.current.controls()
+    if (controls && controls.update) {
+      controls.update()
+    }
+  }, [])
 
   if (!shouldLoad) {
     return (
@@ -194,18 +246,23 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
         width={dimensions.width}
         height={dimensions.height}
         backgroundColor="#111827"
-        nodeLabel="name"
+        nodeLabel=""
         nodeVal="val"
-        nodeColor={(node: any) => node.color || groupColors[node.group] || '#6366f1'}
-        nodeOpacity={0.9}
-        linkWidth={1}
-        linkColor={() => '#4B5563'}
-        linkOpacity={0.4}
+        nodeRelSize={1}
+        nodeOpacity={0}
+        linkWidth={2}
+        linkColor={() => '#6B7280'}
+        linkOpacity={0.6}
         nodeThreeObject={nodeThreeObject}
-        nodeThreeObjectExtend={true}
+        nodeThreeObjectExtend={false}
         enableNodeDrag={true}
         enableNavigationControls={true}
         showNavInfo={false}
+        onEngineTick={onEngineTick}
+        d3AlphaDecay={0.02}
+        d3VelocityDecay={0.3}
+        warmupTicks={50}
+        cooldownTime={3000}
       />
 
       {/* Legend */}
