@@ -88,7 +88,7 @@ export default function HomePage() {
                 FEATURED
               </span>
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                Thorny Island
+                Thorney: London's Forgotten Island
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed mb-6">
                 The hidden island beneath Westminster. Where Parliament, the Abbey, and the Supreme Court now stand was once an island formed by the River Tyburn and the Thames.
@@ -225,7 +225,7 @@ export default function HomePage() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
-              <p className="text-sm font-medium group-hover:underline">Thorny Island</p>
+              <p className="text-sm font-medium group-hover:underline">Thorney</p>
             </a>
             <a
               href="https://shop.ingramspark.com/b/084?params=NwS1eOq0iGczj35Zm0gAawIEcssFFDCeMABwVB9c3gn"
