@@ -6,8 +6,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 
-// Dynamically import KnowledgeGraph to avoid SSR issues
+// Dynamically import graph components to avoid SSR issues
 const KnowledgeGraph = dynamic(() => import('@/components/KnowledgeGraph'), { ssr: false })
+const InterestGraph3D = dynamic(() => import('@/components/InterestGraph3D'), { ssr: false })
 
 interface UserQuery {
   id: number
@@ -463,16 +464,31 @@ export default function DashboardPage() {
             {/* Insights Tab - Zep Data with Visualizations */}
             {activeTab === 'insights' && (
               <div className="space-y-6">
-                {/* Knowledge Graph Visualization */}
+                {/* 3D Interest Graph Visualization */}
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>🕸️</span> Your Interest Graph
+                    <span>🌐</span> Your Interest Graph (3D)
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Drag to rotate, scroll to zoom. Click nodes to explore.
+                  </p>
+                  <InterestGraph3D
+                    facts={zepFacts}
+                    userName={session?.user?.name || 'You'}
+                    height="400px"
+                  />
+                </div>
+
+                {/* 2D Knowledge Graph */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>🕸️</span> Interest Network (2D)
                   </h3>
                   {zepFacts.length > 0 ? (
                     <KnowledgeGraph
                       data={buildGraphData(zepFacts, session?.user?.name || 'You')}
                       width={700}
-                      height={400}
+                      height={350}
                     />
                   ) : (
                     <div className="h-64 flex items-center justify-center text-gray-500">
