@@ -5,32 +5,18 @@ import {
 } from '@copilotkit/runtime'
 
 /**
- * CopilotKit Runtime Endpoint - Full Agent Mode
+ * CopilotKit Runtime - Proxies to VIC CLM backend
  *
- * Architecture:
- * - All LLM + tools handled by VIC CLM (Pydantic AI + Groq/Llama)
- * - Same backend serves both Hume voice and CopilotKit text
- * - Unified experience: article search, Zep memory, VIC persona
- *
- * The CLM uses Pydantic AI's to_ag_ui() to expose a full agent,
- * not just actions. This means:
- * - LLM calls happen on CLM (Groq/Llama - super fast)
- * - Tools (article search) run on CLM
- * - State syncs via AG-UI protocol
+ * The CLM backend has the Pydantic AI agent with AG-UI support.
+ * This route proxies requests to the CLM's /copilotkit endpoint.
  */
 
-// Get the CLM remote endpoint URL
-const getRemoteEndpoint = () => {
-  if (process.env.COPILOTKIT_REMOTE_ENDPOINT) {
-    return process.env.COPILOTKIT_REMOTE_ENDPOINT
-  }
-  return 'http://localhost:8000/copilotkit'
-}
+const REMOTE_ENDPOINT = process.env.COPILOTKIT_REMOTE_ENDPOINT || 'https://vic-clm.vercel.app/copilotkit'
 
 const runtime = new CopilotRuntime({
   remoteEndpoints: [
     {
-      url: getRemoteEndpoint(),
+      url: REMOTE_ENDPOINT,
     },
   ],
 })
