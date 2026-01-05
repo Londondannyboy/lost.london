@@ -31,14 +31,33 @@ interface Article {
   featured_image_url?: string
 }
 
+interface ZepFact {
+  fact: string
+  created_at: string
+  source: string | null
+  target: string | null
+}
+
+interface ZepConversation {
+  session_id: string
+  created_at: string
+  messages: Array<{
+    role: string
+    content: string
+    created_at?: string
+  }>
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const { data: session, isPending } = authClient.useSession()
   const [queries, setQueries] = useState<UserQuery[]>([])
   const [uniqueTopics, setUniqueTopics] = useState<UniqueTopic[]>([])
   const [recommendedArticles, setRecommendedArticles] = useState<Article[]>([])
+  const [zepFacts, setZepFacts] = useState<ZepFact[]>([])
+  const [zepConversations, setZepConversations] = useState<ZepConversation[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'conversations' | 'topics'>('conversations')
+  const [activeTab, setActiveTab] = useState<'conversations' | 'topics' | 'insights'>('conversations')
 
   // Redirect to sign-in if not logged in (after loading completes)
   useEffect(() => {
@@ -47,12 +66,39 @@ export default function DashboardPage() {
     }
   }, [isPending, session, router])
 
-  // Fetch user query history
+  // Fetch user query history and Zep data
   useEffect(() => {
     if (session?.user) {
       fetchQueryHistory()
+      fetchZepData()
     }
   }, [session?.user])
+
+  const fetchZepData = async () => {
+    if (!session?.user?.id) return
+
+    const CLM_URL = 'https://vic-clm.vercel.app'
+
+    try {
+      // Fetch facts and conversations in parallel
+      const [factsRes, convsRes] = await Promise.all([
+        fetch(`${CLM_URL}/api/user/${session.user.id}/facts`),
+        fetch(`${CLM_URL}/api/user/${session.user.id}/conversations`),
+      ])
+
+      const factsData = await factsRes.json()
+      const convsData = await convsRes.json()
+
+      if (factsData.facts) {
+        setZepFacts(factsData.facts)
+      }
+      if (convsData.conversations) {
+        setZepConversations(convsData.conversations)
+      }
+    } catch (error) {
+      console.error('Failed to fetch Zep data:', error)
+    }
+  }
 
   const fetchQueryHistory = async () => {
     try {
@@ -141,14 +187,18 @@ export default function DashboardPage() {
           </p>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-3 gap-4 mt-6">
             <div className="bg-white/10 rounded-lg p-3 text-center">
               <div className="text-2xl font-bold">{queries.length}</div>
-              <div className="text-xs text-white/70">Questions Asked</div>
+              <div className="text-xs text-white/70">Questions</div>
             </div>
             <div className="bg-white/10 rounded-lg p-3 text-center">
               <div className="text-2xl font-bold">{uniqueTopics.length}</div>
-              <div className="text-xs text-white/70">Topics Explored</div>
+              <div className="text-xs text-white/70">Topics</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold">{zepFacts.length}</div>
+              <div className="text-xs text-white/70">Insights</div>
             </div>
           </div>
         </div>
@@ -174,6 +224,21 @@ export default function DashboardPage() {
             }`}
           >
             Topics & Articles
+          </button>
+          <button
+            onClick={() => setActiveTab('insights')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'insights'
+                ? 'border-b-2 border-slate-700 text-slate-700'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Insights
+            {zepFacts.length > 0 && (
+              <span className="ml-2 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">
+                {zepFacts.length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -302,6 +367,119 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Insights Tab - Zep Data */}
+            {activeTab === 'insights' && (
+              <div className="space-y-6">
+                {/* Interest Topics Word Cloud */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>🧠</span> Your Interest Profile
+                  </h3>
+                  {zepFacts.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {/* Extract topics from facts and create a visual */}
+                      {zepFacts
+                        .filter(f => f.fact.toLowerCase().includes('interest'))
+                        .slice(0, 20)
+                        .map((fact, i) => {
+                          // Extract key topic from fact
+                          const match = fact.fact.match(/(?:about|in)\s+([^.]+)/i)
+                          const topic = match ? match[1].trim() : fact.fact.slice(0, 30)
+                          return (
+                            <span
+                              key={i}
+                              className="px-3 py-1.5 bg-gradient-to-r from-slate-100 to-red-50 text-slate-700 rounded-full text-sm border border-slate-200"
+                            >
+                              {topic}
+                            </span>
+                          )
+                        })}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No interests recorded yet. Chat with VIC to build your profile.</p>
+                  )}
+                </div>
+
+                {/* All Facts */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>📊</span> What VIC Remembers ({zepFacts.length} facts)
+                  </h3>
+                  {zepFacts.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {zepFacts.map((fact, i) => (
+                        <div key={i} className="flex items-start gap-2 py-1 border-b border-gray-100 last:border-0">
+                          <span className="text-gray-300">•</span>
+                          <span className="text-sm text-gray-700">{fact.fact}</span>
+                          <span className="text-xs text-gray-400 whitespace-nowrap ml-auto">
+                            {formatDate(fact.created_at)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No facts stored yet.</p>
+                  )}
+                </div>
+
+                {/* Conversation Transcripts */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>📜</span> Conversation Transcripts ({zepConversations.length})
+                  </h3>
+                  {zepConversations.length > 0 ? (
+                    <div className="space-y-4">
+                      {zepConversations.slice(0, 5).map((conv, i) => (
+                        <details key={i} className="border border-gray-200 rounded-lg">
+                          <summary className="px-4 py-2 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              Session {formatDate(conv.created_at)}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {conv.messages?.length || 0} messages
+                            </span>
+                          </summary>
+                          <div className="px-4 py-2 bg-gray-50 border-t max-h-48 overflow-y-auto">
+                            {conv.messages?.map((msg, j) => (
+                              <div key={j} className={`py-1 text-sm ${msg.role === 'user' ? 'text-blue-700' : 'text-gray-700'}`}>
+                                <span className="font-medium">{msg.role === 'user' ? 'You: ' : 'VIC: '}</span>
+                                {msg.content?.slice(0, 200)}{msg.content?.length > 200 ? '...' : ''}
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No conversation transcripts available.</p>
+                  )}
+                </div>
+
+                {/* Clear History Button */}
+                <div className="text-center pt-4">
+                  <button
+                    onClick={async () => {
+                      if (confirm('Are you sure you want to clear all your VIC conversation history? This cannot be undone.')) {
+                        try {
+                          await fetch(`https://vic-clm.vercel.app/api/user/${session?.user?.id}/clear`, {
+                            method: 'DELETE',
+                          })
+                          setZepFacts([])
+                          setZepConversations([])
+                          alert('History cleared successfully')
+                        } catch (error) {
+                          alert('Failed to clear history')
+                        }
+                      }
+                    }}
+                    className="text-sm text-red-600 hover:text-red-800 underline"
+                  >
+                    Clear all history
+                  </button>
+                </div>
               </div>
             )}
 
