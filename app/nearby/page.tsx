@@ -204,15 +204,6 @@ export default function NearbyPage() {
               </div>
             )}
 
-            {/* Map link */}
-            <div className="text-center mt-8">
-              <Link
-                href="/map"
-                className="text-london-400 hover:text-london-300"
-              >
-                View all locations on map →
-              </Link>
-            </div>
           </>
         )}
       </main>

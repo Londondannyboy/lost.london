@@ -72,10 +72,10 @@ export default async function RoutesPage() {
             <h2 className="text-xl font-serif text-gray-900 mb-2">Routes Coming Soon</h2>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               We&apos;re curating walking routes through London&apos;s hidden history.
-              Check back soon or explore the map in the meantime.
+              Check back soon or explore the articles in the meantime.
             </p>
-            <Link href="/map" className="inline-block bg-red-700 text-white px-6 py-2 rounded hover:bg-red-800 transition-colors">
-              Explore Map
+            <Link href="/series/lost-london" className="inline-block bg-red-700 text-white px-6 py-2 rounded hover:bg-red-800 transition-colors">
+              Browse Articles
             </Link>
           </div>
         )}
