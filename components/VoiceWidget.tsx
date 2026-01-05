@@ -936,17 +936,25 @@ export function VoiceWidget() {
   if (!session?.user) {
     return (
       <div className="text-center py-16">
-        {/* VIC Avatar - dimmed */}
-        <div className="relative w-48 h-48 mx-auto mb-8 opacity-60">
-          <img
-            src="/vic-avatar.jpg"
-            alt="VIC - Sign in to chat"
-            className="w-full h-full object-cover rounded-full grayscale"
-          />
-          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
-            <span className="text-white text-4xl">🔒</span>
+        {/* VIC Avatar - clickable to sign in */}
+        <a
+          href="/auth/sign-in"
+          className="relative w-48 h-48 mx-auto mb-8 block group cursor-pointer"
+        >
+          <div className="relative w-full h-full">
+            <img
+              src="/vic-avatar.jpg"
+              alt="VIC - Sign in to chat"
+              className="w-full h-full object-cover rounded-full grayscale opacity-60 group-hover:opacity-80 transition-opacity"
+            />
+            <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center group-hover:bg-black/30 transition-colors">
+              <span className="text-white text-4xl group-hover:scale-110 transition-transform">&#128274;</span>
+            </div>
           </div>
-        </div>
+          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#f4ead5] text-[#2a231a] text-xs px-3 py-1 rounded-full font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Click to sign in
+          </span>
+        </a>
 
         <h2 className="text-2xl font-serif font-bold text-[#f4ead5] mb-3">
           Sign in to speak with VIC
@@ -969,6 +977,20 @@ export function VoiceWidget() {
             Sign up free
           </a>
         </p>
+
+        {/* Beta notice */}
+        <div className="mt-8">
+          <a
+            href="/privacy"
+            className="inline-flex items-center gap-2 text-amber-400/80 hover:text-amber-300 text-sm transition-colors"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+            </span>
+            <span>BETA — Demo product, data may be cleared</span>
+          </a>
+        </div>
       </div>
     )
   }
