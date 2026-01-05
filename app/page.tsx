@@ -181,7 +181,7 @@ export default function HomePage() {
               Take London's hidden history home. Vic Keegan's Lost London series is available at Waterstones and IngramSpark.
             </p>
           </div>
-          <div className="grid md:grid-cols-4 gap-6 mb-10">
+          <div className="grid md:grid-cols-3 gap-8 mb-10">
             <a
               href="https://www.waterstones.com/author/vic-keegan/4942784"
               target="_blank"
@@ -213,21 +213,6 @@ export default function HomePage() {
               <p className="text-sm font-medium group-hover:underline">Volume 2</p>
             </a>
             <a
-              href="https://www.waterstones.com/author/vic-keegan/4942784"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group"
-            >
-              <div className="aspect-[3/4] overflow-hidden bg-gray-100 mb-3 rounded-lg shadow-lg group-hover:shadow-xl transition-shadow">
-                <img
-                  src="/Thorney London's Forgotten book cover.jpg"
-                  alt="Thorny Island"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <p className="text-sm font-medium group-hover:underline">Thorney</p>
-            </a>
-            <a
               href="https://shop.ingramspark.com/b/084?params=NwS1eOq0iGczj35Zm0gAawIEcssFFDCeMABwVB9c3gn"
               target="_blank"
               rel="noopener noreferrer"
@@ -235,12 +220,12 @@ export default function HomePage() {
             >
               <div className="aspect-[3/4] overflow-hidden bg-gray-100 mb-3 rounded-lg shadow-lg group-hover:shadow-xl transition-shadow">
                 <img
-                  src="/fornoy-island-cover.jpg"
-                  alt="Fornøy Island"
+                  src="/Thorney London's Forgotten book cover.jpg"
+                  alt="Thorney: London's Forgotten Island"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
-              <p className="text-sm font-medium group-hover:underline">Fornøy Island</p>
+              <p className="text-sm font-medium group-hover:underline">Thorney</p>
             </a>
           </div>
           {/* Buy CTA */}

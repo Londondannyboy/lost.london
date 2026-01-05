@@ -56,7 +56,7 @@ export function BuyBookBanner() {
             rel="noopener noreferrer"
             className="px-3 py-2 bg-amber-600 text-white font-bold text-xs md:text-sm rounded hover:bg-amber-500 transition-colors"
           >
-            Fornøy Island
+            Thorney
           </a>
           <button
             onClick={handleDismiss}
