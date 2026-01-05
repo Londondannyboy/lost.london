@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { authClient } from '@/lib/auth/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 
-// Dynamically import graph components to avoid SSR issues
-const KnowledgeGraph = dynamic(() => import('@/components/KnowledgeGraph'), { ssr: false })
+// Dynamically import 3D graph to avoid SSR issues
 const InterestGraph3D = dynamic(() => import('@/components/InterestGraph3D'), { ssr: false })
 
 interface UserQuery {
@@ -43,16 +42,6 @@ interface ZepFact {
   target: string | null
 }
 
-interface ZepConversation {
-  session_id: string
-  created_at: string
-  messages: Array<{
-    role: string
-    content: string
-    created_at?: string
-  }>
-}
-
 export default function DashboardPage() {
   const router = useRouter()
   const { data: session, isPending } = authClient.useSession()
@@ -60,9 +49,8 @@ export default function DashboardPage() {
   const [uniqueTopics, setUniqueTopics] = useState<UniqueTopic[]>([])
   const [recommendedArticles, setRecommendedArticles] = useState<Article[]>([])
   const [zepFacts, setZepFacts] = useState<ZepFact[]>([])
-  const [zepConversations, setZepConversations] = useState<ZepConversation[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'conversations' | 'topics' | 'insights'>('conversations')
+  const [activeTab, setActiveTab] = useState<'conversations' | 'topics'>('conversations')
 
   // Redirect to sign-in if not logged in (after loading completes)
   useEffect(() => {
@@ -85,20 +73,11 @@ export default function DashboardPage() {
     const CLM_URL = 'https://vic-clm.vercel.app'
 
     try {
-      // Fetch facts and conversations in parallel
-      const [factsRes, convsRes] = await Promise.all([
-        fetch(`${CLM_URL}/api/user/${session.user.id}/facts`),
-        fetch(`${CLM_URL}/api/user/${session.user.id}/conversations`),
-      ])
-
+      const factsRes = await fetch(`${CLM_URL}/api/user/${session.user.id}/facts`)
       const factsData = await factsRes.json()
-      const convsData = await convsRes.json()
 
       if (factsData.facts) {
         setZepFacts(factsData.facts)
-      }
-      if (convsData.conversations) {
-        setZepConversations(convsData.conversations)
       }
     } catch (error) {
       console.error('Failed to fetch Zep data:', error)
@@ -166,92 +145,6 @@ export default function DashboardPage() {
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   }
 
-  // Build graph data from Zep facts
-  type NodeType = 'user' | 'preference' | 'skill' | 'job' | 'company' | 'fact'
-
-  const buildGraphData = (facts: ZepFact[], userName: string) => {
-    const nodes: Array<{id: string, type: NodeType, label: string}> = []
-    const edges: Array<{source: string, target: string, type: string, label?: string}> = []
-    const topicSet = new Set<string>()
-
-    // Add user as center node
-    nodes.push({ id: 'user', type: 'user' as NodeType, label: userName })
-
-    // Extract topics from facts
-    facts.forEach((fact, i) => {
-      const factLower = fact.fact.toLowerCase()
-
-      // Skip generic/meta facts
-      if (factLower.includes('vic has') || factLower.includes('assistant')) return
-
-      // Extract topic from "interest in/about X" patterns
-      const interestMatch = fact.fact.match(/interest(?:ed)?\s+(?:in\s+)?(?:learning\s+)?(?:about\s+)?([^.]+)/i)
-      if (interestMatch) {
-        const topic = interestMatch[1].trim().replace(/^the\s+/i, '')
-        if (topic.length > 2 && topic.length < 40 && !topicSet.has(topic.toLowerCase())) {
-          topicSet.add(topic.toLowerCase())
-          const nodeId = `topic-${i}`
-          nodes.push({ id: nodeId, type: 'preference' as NodeType, label: topic })
-          edges.push({ source: 'user', target: nodeId, type: 'interested_in', label: 'interested in' })
-        }
-        return
-      }
-
-      // Extract location-based facts
-      const locationMatch = fact.fact.match(/(?:about|exploring|discussing)\s+([A-Z][^.]+)/i)
-      if (locationMatch) {
-        const location = locationMatch[1].trim()
-        if (location.length > 2 && location.length < 40 && !topicSet.has(location.toLowerCase())) {
-          topicSet.add(location.toLowerCase())
-          const nodeId = `loc-${i}`
-          nodes.push({ id: nodeId, type: 'skill' as NodeType, label: location })
-          edges.push({ source: 'user', target: nodeId, type: 'explored' })
-        }
-      }
-    })
-
-    // Limit nodes for performance
-    return {
-      nodes: nodes.slice(0, 25),
-      edges: edges.slice(0, 30)
-    }
-  }
-
-  // Extract clean topics from facts (filtering affirmations)
-  const extractTopicsFromFacts = (facts: ZepFact[]): string[] => {
-    const topics: string[] = []
-    const seen = new Set<string>()
-    const AFFIRMATIONS = ['yes', 'no', 'ok', 'okay', 'sure', 'yeah', 'yep', 'nope', 'confirmed', 'user']
-
-    facts.forEach(fact => {
-      const factLower = fact.fact.toLowerCase()
-
-      // Skip if it's about VIC or generic
-      if (factLower.includes('vic ') || factLower.includes('assistant')) return
-
-      // Extract topics from interest patterns
-      const match = fact.fact.match(/(?:interest|about|exploring|learning about)\s+([^.]+)/i)
-      if (match) {
-        let topic = match[1].trim()
-          .replace(/^the\s+/i, '')
-          .replace(/\s*\([^)]*\)/g, '')  // Remove parentheticals
-          .trim()
-
-        // Filter affirmations and short strings
-        if (topic.length < 3 || topic.length > 50) return
-        if (AFFIRMATIONS.some(a => topic.toLowerCase() === a)) return
-
-        const topicLower = topic.toLowerCase()
-        if (!seen.has(topicLower)) {
-          seen.add(topicLower)
-          topics.push(topic)
-        }
-      }
-    })
-
-    return topics.slice(0, 20)
-  }
-
   // Show loading while checking auth
   if (isPending || !session?.user) {
     return (
@@ -266,7 +159,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="bg-stone-50">
+    <div className="bg-stone-50 min-h-screen">
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-xl p-8 mb-8">
@@ -294,6 +187,21 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* 3D Interest Graph - Showcase Section */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm">
+          <h2 className="font-serif font-bold text-gray-900 text-xl mb-2 flex items-center gap-2">
+            <span>🌐</span> Your Interest Graph
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            A 3D visualization of topics you've explored with VIC. Drag to rotate, scroll to zoom.
+          </p>
+          <InterestGraph3D
+            facts={zepFacts}
+            userName={session?.user?.name || 'You'}
+            height="450px"
+          />
+        </div>
+
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-gray-200">
           <button
@@ -304,7 +212,7 @@ export default function DashboardPage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Conversations
+            Recent Conversations
           </button>
           <button
             onClick={() => setActiveTab('topics')}
@@ -315,21 +223,6 @@ export default function DashboardPage() {
             }`}
           >
             Topics & Articles
-          </button>
-          <button
-            onClick={() => setActiveTab('insights')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === 'insights'
-                ? 'border-b-2 border-slate-700 text-slate-700'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Insights
-            {zepFacts.length > 0 && (
-              <span className="ml-2 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">
-                {zepFacts.length}
-              </span>
-            )}
           </button>
         </div>
 
@@ -365,11 +258,11 @@ export default function DashboardPage() {
                             {query.article_title && query.article_slug && (
                               <Link
                                 href={`/article/${query.article_slug}`}
-                                className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-red-700 transition-colors"
+                                className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-red-700 transition-colors group"
                               >
                                 <span>📄</span>
-                                <span className="underline">{query.article_title}</span>
-                                <span className="text-gray-400">→</span>
+                                <span className="underline group-hover:no-underline">{query.article_title}</span>
+                                <span className="text-gray-400 group-hover:text-red-500">→</span>
                               </Link>
                             )}
                           </div>
@@ -404,7 +297,7 @@ export default function DashboardPage() {
                 {uniqueTopics.length > 0 ? (
                   <div className="space-y-4">
                     <p className="text-sm text-gray-600">
-                      Topics you've explored with VIC, linked to related articles:
+                      Topics you've explored with VIC. Click to read the full article:
                     </p>
                     <div className="space-y-3">
                       {uniqueTopics.map((topic, i) => (
@@ -427,11 +320,11 @@ export default function DashboardPage() {
                               {topic.article_title && topic.article_slug && (
                                 <Link
                                   href={`/article/${topic.article_slug}`}
-                                  className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-red-700 transition-colors"
+                                  className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-red-700 transition-colors group"
                                 >
                                   <span>📄</span>
-                                  <span className="underline">{topic.article_title}</span>
-                                  <span className="text-gray-400">→</span>
+                                  <span className="underline group-hover:no-underline">{topic.article_title}</span>
+                                  <span className="text-gray-400 group-hover:text-red-500">→</span>
                                 </Link>
                               )}
                             </div>
@@ -461,147 +354,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Insights Tab - Zep Data with Visualizations */}
-            {activeTab === 'insights' && (
-              <div className="space-y-6">
-                {/* 3D Interest Graph Visualization */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>🌐</span> Your Interest Graph (3D)
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-3">
-                    Drag to rotate, scroll to zoom. Click nodes to explore.
-                  </p>
-                  <InterestGraph3D
-                    facts={zepFacts}
-                    userName={session?.user?.name || 'You'}
-                    height="400px"
-                  />
-                </div>
-
-                {/* 2D Knowledge Graph */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>🕸️</span> Interest Network (2D)
-                  </h3>
-                  {zepFacts.length > 0 ? (
-                    <KnowledgeGraph
-                      data={buildGraphData(zepFacts, session?.user?.name || 'You')}
-                      width={700}
-                      height={350}
-                    />
-                  ) : (
-                    <div className="h-64 flex items-center justify-center text-gray-500">
-                      Chat with VIC to build your knowledge graph
-                    </div>
-                  )}
-                </div>
-
-                {/* Interest Topics - Visual Tags */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>🧠</span> Topics You've Explored
-                  </h3>
-                  {zepFacts.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {extractTopicsFromFacts(zepFacts).map((topic, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1.5 bg-gradient-to-r from-slate-100 to-red-50 text-slate-700 rounded-full text-sm border border-slate-200"
-                        >
-                          {topic}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm">No topics recorded yet.</p>
-                  )}
-                </div>
-
-                {/* All Facts - Scrollable List */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>📊</span> What VIC Remembers ({zepFacts.length} facts)
-                  </h3>
-                  {zepFacts.length > 0 ? (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {zepFacts.map((fact, i) => (
-                        <div key={i} className="flex items-start gap-2 py-1 border-b border-gray-100 last:border-0">
-                          <span className="text-gray-400">•</span>
-                          <span className="text-sm text-gray-700 flex-1">{fact.fact}</span>
-                          <span className="text-xs text-gray-400 whitespace-nowrap">
-                            {formatDate(fact.created_at)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm">No facts stored yet.</p>
-                  )}
-                </div>
-
-                {/* Conversation Transcripts - Fixed styling */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="font-serif font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>📜</span> Conversation Transcripts ({zepConversations.length})
-                  </h3>
-                  {zepConversations.length > 0 ? (
-                    <div className="space-y-3">
-                      {zepConversations.slice(0, 5).map((conv, i) => (
-                        <details key={i} className="border border-gray-200 rounded-lg overflow-hidden">
-                          <summary className="px-4 py-3 cursor-pointer bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-gray-900">
-                            <span className="text-sm font-medium text-gray-900">
-                              Session {formatDate(conv.created_at)}
-                            </span>
-                            <span className="text-xs text-gray-600 bg-gray-200 px-2 py-0.5 rounded">
-                              {conv.messages?.length || 0} messages
-                            </span>
-                          </summary>
-                          <div className="px-4 py-3 bg-white border-t max-h-48 overflow-y-auto">
-                            {conv.messages?.map((msg, j) => (
-                              <div key={j} className={`py-2 text-sm border-b border-gray-100 last:border-0 ${msg.role === 'user' ? 'bg-blue-50 -mx-4 px-4' : ''}`}>
-                                <span className={`font-semibold ${msg.role === 'user' ? 'text-blue-700' : 'text-gray-700'}`}>
-                                  {msg.role === 'user' ? 'You: ' : 'VIC: '}
-                                </span>
-                                <span className="text-gray-800">
-                                  {msg.content?.slice(0, 300)}{(msg.content?.length || 0) > 300 ? '...' : ''}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </details>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm">No conversation transcripts available.</p>
-                  )}
-                </div>
-
-                {/* Clear History Button */}
-                <div className="text-center pt-4">
-                  <button
-                    onClick={async () => {
-                      if (confirm('Are you sure you want to clear all your VIC conversation history? This cannot be undone.')) {
-                        try {
-                          await fetch(`https://vic-clm.vercel.app/api/user/${session?.user?.id}/clear`, {
-                            method: 'DELETE',
-                          })
-                          setZepFacts([])
-                          setZepConversations([])
-                          alert('History cleared successfully')
-                        } catch (error) {
-                          alert('Failed to clear history')
-                        }
-                      }
-                    }}
-                    className="text-sm text-red-600 hover:text-red-800 underline"
-                  >
-                    Clear all history
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Recommended Articles Section */}
             {recommendedArticles.length > 0 && (
               <div className="mt-8">
@@ -613,7 +365,7 @@ export default function DashboardPage() {
                     <Link
                       key={article.id}
                       href={`/article/${article.slug}`}
-                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex gap-3"
+                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex gap-3 group"
                     >
                       {article.featured_image_url ? (
                         <img
@@ -627,7 +379,7 @@ export default function DashboardPage() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <h3 className="font-medium text-gray-900 text-sm line-clamp-2 hover:text-red-700">
+                        <h3 className="font-medium text-gray-900 text-sm line-clamp-2 group-hover:text-red-700 transition-colors">
                           {article.title}
                         </h3>
                         <p className="text-xs text-gray-500 mt-1 line-clamp-2">
@@ -640,6 +392,55 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* What VIC Remembers - Collapsed Section */}
+            {zepFacts.length > 0 && (
+              <div className="mt-8">
+                <details className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <summary className="px-6 py-4 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
+                    <h3 className="font-serif font-bold text-gray-900 flex items-center gap-2">
+                      <span>🧠</span> What VIC Remembers About You
+                    </h3>
+                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">
+                      {zepFacts.length} insights
+                    </span>
+                  </summary>
+                  <div className="px-6 pb-4 border-t border-gray-100">
+                    <div className="space-y-2 max-h-64 overflow-y-auto mt-4">
+                      {zepFacts.slice(0, 20).map((fact, i) => (
+                        <div key={i} className="flex items-start gap-2 py-1 border-b border-gray-100 last:border-0">
+                          <span className="text-gray-400">•</span>
+                          <span className="text-sm text-gray-700 flex-1">{fact.fact}</span>
+                          <span className="text-xs text-gray-400 whitespace-nowrap">
+                            {formatDate(fact.created_at)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Clear History */}
+                    <div className="text-center pt-4 border-t mt-4">
+                      <button
+                        onClick={async () => {
+                          if (confirm('Are you sure you want to clear all your VIC conversation history? This cannot be undone.')) {
+                            try {
+                              await fetch(`https://vic-clm.vercel.app/api/user/${session?.user?.id}/clear`, {
+                                method: 'DELETE',
+                              })
+                              setZepFacts([])
+                              alert('History cleared successfully')
+                            } catch (error) {
+                              alert('Failed to clear history')
+                            }
+                          }
+                        }}
+                        className="text-sm text-red-600 hover:text-red-800 underline"
+                      >
+                        Clear all history
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            )}
           </>
         )}
       </main>
