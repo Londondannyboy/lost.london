@@ -173,11 +173,11 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
   }, [facts, userName])
 
   // Custom node with sphere + floating label
-  const nodeThreeObject = useCallback((node: any) => {
-    if (!SpriteText) return null
-
+  const nodeThreeObject = useCallback((node: any): THREE.Object3D => {
     // Create a group to hold sphere and label
     const group = new THREE.Group()
+
+    if (!SpriteText) return group
 
     // Create the sphere
     const sphereRadius = node.group === 'user' ? 8 : 5
