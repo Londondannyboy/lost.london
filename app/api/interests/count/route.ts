@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       SELECT COUNT(*) as count
       FROM pending_interests
       WHERE user_id = ${userId} AND status = 'pending'
-    `
+    ` as Array<{ count: string }>
 
     const count = parseInt(result[0]?.count || '0')
 

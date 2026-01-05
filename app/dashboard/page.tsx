@@ -58,6 +58,7 @@ export default function DashboardPage() {
   const [recommendedArticles, setRecommendedArticles] = useState<Article[]>([])
   const [zepFacts, setZepFacts] = useState<ZepFact[]>([])
   const [articleNodes, setArticleNodes] = useState<ArticleNode[]>([])
+  const [pendingInterests, setPendingInterests] = useState<ArticleNode[]>([])
   const [loading, setLoading] = useState(true)
 
   // Redirect to sign-in if not logged in (after loading completes)
@@ -67,13 +68,37 @@ export default function DashboardPage() {
     }
   }, [isPending, session, router])
 
-  // Fetch user query history and Zep data
+  // Fetch user query history, Zep data, and pending interests
   useEffect(() => {
     if (session?.user) {
       fetchQueryHistory()
       fetchZepData()
+      fetchPendingInterests()
     }
   }, [session?.user])
+
+  const fetchPendingInterests = async () => {
+    try {
+      const res = await fetch('/api/interests?status=pending')
+      const data = await res.json()
+
+      if (data.interests) {
+        // Transform to ArticleNode format for the graph
+        const pending = data.interests
+          .filter((i: any) => i.article_id && i.article_title)
+          .map((i: any) => ({
+            article_id: i.article_id,
+            article_title: i.article_title,
+            article_slug: i.article_slug,
+            count: 1,
+            status: 'pending' as const,
+          }))
+        setPendingInterests(pending)
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending interests:', error)
+    }
+  }
 
   const fetchZepData = async () => {
     if (!session?.user?.id) return
@@ -213,7 +238,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Human-in-the-Loop: Pending Interest Confirmation */}
-        <InterestConfirmation onUpdate={fetchQueryHistory} />
+        <InterestConfirmation onUpdate={() => { fetchQueryHistory(); fetchPendingInterests() }} />
 
         {/* 3D Interest Graph - Showcase Section */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm">
@@ -225,6 +250,7 @@ export default function DashboardPage() {
           </p>
           <InterestGraph3D
             articles={articleNodes}
+            pendingInterests={pendingInterests}
             userName={session?.user?.name || 'You'}
             height="450px"
           />

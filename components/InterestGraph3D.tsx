@@ -34,22 +34,26 @@ interface ArticleNode {
   article_title: string
   article_slug: string
   count: number
+  status?: 'confirmed' | 'pending'  // Validation status
 }
 
 interface InterestGraph3DProps {
-  articles: ArticleNode[]  // Validated article titles only
+  articles: ArticleNode[]
+  pendingInterests?: ArticleNode[]  // Unvalidated interests (shown differently)
   userName: string
   height?: string
 }
 
 const groupColors: Record<string, string> = {
-  user: '#8B5CF6',     // Purple
-  interest: '#EC4899', // Pink
-  location: '#3B82F6', // Blue
-  topic: '#10B981',    // Green
+  user: '#8B5CF6',       // Purple - user node
+  confirmed: '#10B981',  // Green - validated interests
+  pending: '#F59E0B',    // Amber - pending confirmation
+  interest: '#EC4899',   // Pink - legacy
+  location: '#3B82F6',   // Blue
+  topic: '#6B7280',      // Gray - unvalidated
 }
 
-export function InterestGraph3D({ articles, userName, height = '400px' }: InterestGraph3DProps) {
+export function InterestGraph3D({ articles, pendingInterests = [], userName, height = '400px' }: InterestGraph3DProps) {
   const graphRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 700, height: 400 })
@@ -109,7 +113,7 @@ export function InterestGraph3D({ articles, userName, height = '400px' }: Intere
     return () => clearTimeout(timer)
   }, [shouldLoad, SpriteText])
 
-  // Build graph data from validated articles only
+  // Build graph data from both confirmed and pending interests
   const graphData = useCallback(() => {
     const nodes: GraphNode[] = []
     const links: GraphLink[] = []
@@ -123,39 +127,48 @@ export function InterestGraph3D({ articles, userName, height = '400px' }: Intere
       color: groupColors.user
     })
 
-    // Add validated article titles as nodes
-    // These are real articles from our database, not inferred topics
+    // Helper to clean article titles
+    const cleanTitle = (title: string) => {
+      let clean = title.replace(/^Vic Keegan's Lost London \d+:\s*/i, '').trim()
+      return clean.length > 30 ? clean.slice(0, 27) + '...' : clean
+    }
+
+    // Add CONFIRMED interests (green, solid)
     articles.forEach((article) => {
-      // Clean title - remove "Vic Keegan's Lost London XXX: " prefix
-      let title = article.article_title
-        .replace(/^Vic Keegan's Lost London \d+:\s*/i, '')
-        .trim()
-
-      // Limit title length for display
-      if (title.length > 30) {
-        title = title.slice(0, 27) + '...'
-      }
-
-      const nodeId = `article-${article.article_id}`
-
-      // Size based on how many times user asked about it
-      const size = Math.min(8 + article.count * 3, 18)
+      const title = cleanTitle(article.article_title)
+      const nodeId = `confirmed-${article.article_id}`
+      const size = Math.min(10 + article.count * 3, 18)
 
       nodes.push({
         id: nodeId,
-        name: title,
+        name: `✓ ${title}`,  // Checkmark for confirmed
         group: 'interest',
         val: size,
-        color: groupColors.interest
+        color: groupColors.confirmed  // Green
       })
       links.push({ source: 'user', target: nodeId })
     })
 
+    // Add PENDING interests (amber, with ? indicator)
+    pendingInterests.forEach((interest) => {
+      const title = cleanTitle(interest.article_title)
+      const nodeId = `pending-${interest.article_id}`
+
+      nodes.push({
+        id: nodeId,
+        name: `? ${title}`,  // Question mark for pending
+        group: 'topic',
+        val: 8,  // Smaller than confirmed
+        color: groupColors.pending  // Amber
+      })
+      links.push({ source: 'user', target: nodeId, label: 'pending' })
+    })
+
     return {
-      nodes: nodes.slice(0, 15),
-      links: links.slice(0, 15)
+      nodes: nodes.slice(0, 20),
+      links: links.slice(0, 20)
     }
-  }, [articles, userName])
+  }, [articles, pendingInterests, userName])
 
   // Custom node with sphere + floating label
   const nodeThreeObject = useCallback((node: any): THREE.Object3D => {
@@ -211,7 +224,7 @@ export function InterestGraph3D({ articles, userName, height = '400px' }: Intere
 
   const data = graphData()
 
-  if (articles.length === 0) {
+  if (articles.length === 0 && pendingInterests.length === 0) {
     return (
       <div
         ref={containerRef}
@@ -251,14 +264,22 @@ export function InterestGraph3D({ articles, userName, height = '400px' }: Intere
       />
 
       {/* Legend */}
-      <div className="absolute top-3 left-3 bg-black/60 rounded-lg p-2 text-xs">
-        <div className="flex flex-col gap-1">
-          {Object.entries(groupColors).map(([key, color]) => (
-            <div key={key} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-white capitalize">{key}</span>
+      <div className="absolute top-3 left-3 bg-black/70 rounded-lg p-3 text-xs">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: groupColors.user }} />
+            <span className="text-white">You</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: groupColors.confirmed }} />
+            <span className="text-white">✓ Confirmed</span>
+          </div>
+          {pendingInterests.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: groupColors.pending }} />
+              <span className="text-white">? Pending</span>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

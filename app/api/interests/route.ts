@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       FROM pending_interests
       WHERE user_id = ${user.id}
       GROUP BY status
-    `
+    ` as Array<{ status: string; count: string }>
 
     const countMap = {
       pending: 0,
@@ -53,7 +53,9 @@ export async function GET(request: NextRequest) {
       rejected: 0,
     }
     for (const row of counts) {
-      countMap[row.status as keyof typeof countMap] = parseInt(row.count)
+      if (row.status in countMap) {
+        countMap[row.status as keyof typeof countMap] = parseInt(row.count)
+      }
     }
 
     return NextResponse.json({
@@ -115,7 +117,14 @@ export async function PATCH(request: NextRequest) {
       SET status = ${newStatus}, confirmed_at = ${action === 'confirm' ? new Date().toISOString() : null}
       WHERE id = ${interestId} AND user_id = ${user.id}
       RETURNING id, topic, article_id, article_title, article_slug, status
-    `
+    ` as Array<{
+      id: number
+      topic: string
+      article_id: number | null
+      article_title: string | null
+      article_slug: string | null
+      status: string
+    }>
 
     if (result.length === 0) {
       return NextResponse.json({ error: 'Interest not found' }, { status: 404 })
