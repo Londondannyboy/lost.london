@@ -77,7 +77,7 @@ export default function HomePage() {
             <div className="md:w-1/3">
               <div className="aspect-[3/4] overflow-hidden bg-gray-100">
                 <img
-                  src="/lost-london-cover-3.jpg"
+                  src="/Thorney London's Forgotten book cover.jpg"
                   alt="Thorny Island"
                   className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
                 />
@@ -220,7 +220,7 @@ export default function HomePage() {
             >
               <div className="aspect-[3/4] overflow-hidden bg-gray-100 mb-3 rounded-lg shadow-lg group-hover:shadow-xl transition-shadow">
                 <img
-                  src="/lost-london-cover-3.jpg"
+                  src="/Thorney London's Forgotten book cover.jpg"
                   alt="Thorny Island"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />

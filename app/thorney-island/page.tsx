@@ -40,7 +40,7 @@ export default async function ThorneyIslandPage() {
       <section className="relative">
         <div className="absolute inset-0">
           <img
-            src="/lost-london-cover-3.jpg"
+            src="/Thorney London's Forgotten book cover.jpg"
             alt="Thorney Island"
             className="w-full h-full object-cover"
           />
