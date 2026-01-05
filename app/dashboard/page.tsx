@@ -42,6 +42,13 @@ interface ZepFact {
   target: string | null
 }
 
+interface ArticleNode {
+  article_id: number
+  article_title: string
+  article_slug: string
+  count: number
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const { data: session, isPending } = authClient.useSession()
@@ -49,6 +56,7 @@ export default function DashboardPage() {
   const [uniqueTopics, setUniqueTopics] = useState<UniqueTopic[]>([])
   const [recommendedArticles, setRecommendedArticles] = useState<Article[]>([])
   const [zepFacts, setZepFacts] = useState<ZepFact[]>([])
+  const [articleNodes, setArticleNodes] = useState<ArticleNode[]>([])
   const [loading, setLoading] = useState(true)
 
   // Redirect to sign-in if not logged in (after loading completes)
@@ -91,6 +99,25 @@ export default function DashboardPage() {
       if (!data.error) {
         setQueries(data.queries || [])
         setUniqueTopics(data.uniqueTopics || [])
+
+        // Build article nodes for graph - only validated articles from DB
+        const articleMap = new Map<number, ArticleNode>()
+        for (const q of (data.queries || [])) {
+          if (q.article_id && q.article_title && q.article_slug) {
+            const existing = articleMap.get(q.article_id)
+            if (existing) {
+              existing.count++
+            } else {
+              articleMap.set(q.article_id, {
+                article_id: q.article_id,
+                article_title: q.article_title,
+                article_slug: q.article_slug,
+                count: 1
+              })
+            }
+          }
+        }
+        setArticleNodes(Array.from(articleMap.values()))
 
         // Get recommendations based on topics
         if (data.uniqueTopics?.length > 0) {
@@ -193,7 +220,7 @@ export default function DashboardPage() {
             A 3D visualization of topics you've explored with VIC. Drag to rotate, scroll to zoom.
           </p>
           <InterestGraph3D
-            facts={zepFacts}
+            articles={articleNodes}
             userName={session?.user?.name || 'You'}
             height="450px"
           />

@@ -29,8 +29,15 @@ interface GraphLink {
   label?: string
 }
 
+interface ArticleNode {
+  article_id: number
+  article_title: string
+  article_slug: string
+  count: number
+}
+
 interface InterestGraph3DProps {
-  facts: Array<{ fact: string; created_at: string }>
+  articles: ArticleNode[]  // Validated article titles only
   userName: string
   height?: string
 }
@@ -42,13 +49,12 @@ const groupColors: Record<string, string> = {
   topic: '#10B981',    // Green
 }
 
-export function InterestGraph3D({ facts, userName, height = '400px' }: InterestGraph3DProps) {
+export function InterestGraph3D({ articles, userName, height = '400px' }: InterestGraph3DProps) {
   const graphRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 700, height: 400 })
   const [SpriteText, setSpriteText] = useState<typeof SpriteTextType | null>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
-  const rotationRef = useRef<number>(0)
 
   // Defer loading for performance
   useEffect(() => {
@@ -103,11 +109,10 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
     return () => clearTimeout(timer)
   }, [shouldLoad, SpriteText])
 
-  // Build graph data from facts
+  // Build graph data from validated articles only
   const graphData = useCallback(() => {
     const nodes: GraphNode[] = []
     const links: GraphLink[] = []
-    const seen = new Set<string>()
 
     // Add user at center
     nodes.push({
@@ -118,59 +123,39 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
       color: groupColors.user
     })
 
-    // Extract topics from facts
-    facts.forEach((fact, i) => {
-      const factLower = fact.fact.toLowerCase()
+    // Add validated article titles as nodes
+    // These are real articles from our database, not inferred topics
+    articles.forEach((article) => {
+      // Clean title - remove "Vic Keegan's Lost London XXX: " prefix
+      let title = article.article_title
+        .replace(/^Vic Keegan's Lost London \d+:\s*/i, '')
+        .trim()
 
-      // Skip VIC/assistant facts
-      if (factLower.includes('vic ') || factLower.includes('assistant')) return
-
-      // Extract interests
-      const interestMatch = fact.fact.match(/interest(?:ed)?\s+(?:in\s+)?(?:learning\s+)?(?:about\s+)?([^.]+)/i)
-      if (interestMatch) {
-        const topic = interestMatch[1].trim().replace(/^the\s+/i, '').slice(0, 30)
-        const topicId = `interest-${topic.toLowerCase().replace(/\s+/g, '-')}`
-
-        if (!seen.has(topicId) && topic.length > 2) {
-          seen.add(topicId)
-          nodes.push({
-            id: topicId,
-            name: topic,
-            group: 'interest',
-            val: 12,
-            color: groupColors.interest
-          })
-          links.push({ source: 'user', target: topicId, label: 'interested in' })
-        }
-        return
+      // Limit title length for display
+      if (title.length > 30) {
+        title = title.slice(0, 27) + '...'
       }
 
-      // Extract locations/places
-      const locationMatch = fact.fact.match(/(?:about|exploring|discussing)\s+([A-Z][^.]{3,30})/i)
-      if (locationMatch) {
-        const location = locationMatch[1].trim().slice(0, 25)
-        const locId = `loc-${location.toLowerCase().replace(/\s+/g, '-')}`
+      const nodeId = `article-${article.article_id}`
 
-        if (!seen.has(locId) && location.length > 2) {
-          seen.add(locId)
-          nodes.push({
-            id: locId,
-            name: location,
-            group: 'location',
-            val: 10,
-            color: groupColors.location
-          })
-          links.push({ source: 'user', target: locId, label: 'explored' })
-        }
-      }
+      // Size based on how many times user asked about it
+      const size = Math.min(8 + article.count * 3, 18)
+
+      nodes.push({
+        id: nodeId,
+        name: title,
+        group: 'interest',
+        val: size,
+        color: groupColors.interest
+      })
+      links.push({ source: 'user', target: nodeId })
     })
 
-    // Limit for performance
     return {
-      nodes: nodes.slice(0, 20),
-      links: links.slice(0, 25)
+      nodes: nodes.slice(0, 15),
+      links: links.slice(0, 15)
     }
-  }, [facts, userName])
+  }, [articles, userName])
 
   // Custom node with sphere + floating label
   const nodeThreeObject = useCallback((node: any): THREE.Object3D => {
@@ -226,7 +211,7 @@ export function InterestGraph3D({ facts, userName, height = '400px' }: InterestG
 
   const data = graphData()
 
-  if (data.nodes.length <= 1) {
+  if (articles.length === 0) {
     return (
       <div
         ref={containerRef}
