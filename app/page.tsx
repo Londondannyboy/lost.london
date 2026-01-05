@@ -70,7 +70,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Book - Thorney Island */}
+      {/* Featured Book - Thorny Island */}
       <section className="py-16 border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex flex-col md:flex-row gap-12 items-center">
@@ -78,7 +78,7 @@ export default function HomePage() {
               <div className="aspect-[3/4] overflow-hidden bg-gray-100">
                 <img
                   src="/lost-london-cover-3.jpg"
-                  alt="Thorney Island"
+                  alt="Thorny Island"
                   className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
                 />
               </div>
@@ -88,7 +88,7 @@ export default function HomePage() {
                 FEATURED
               </span>
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                Thorney Island
+                Thorny Island
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed mb-6">
                 The hidden island beneath Westminster. Where Parliament, the Abbey, and the Supreme Court now stand was once an island formed by the River Tyburn and the Thames.
@@ -221,11 +221,11 @@ export default function HomePage() {
               <div className="aspect-[3/4] overflow-hidden bg-gray-100 mb-3 rounded-lg shadow-lg group-hover:shadow-xl transition-shadow">
                 <img
                   src="/lost-london-cover-3.jpg"
-                  alt="Thorney Island"
+                  alt="Thorny Island"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
-              <p className="text-sm font-medium group-hover:underline">Thorney Island</p>
+              <p className="text-sm font-medium group-hover:underline">Thorny Island</p>
             </a>
             <a
               href="https://shop.ingramspark.com/b/084?params=NwS1eOq0iGczj35Zm0gAawIEcssFFDCeMABwVB9c3gn"
