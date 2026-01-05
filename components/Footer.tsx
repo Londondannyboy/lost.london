@@ -18,7 +18,6 @@ export function Footer() {
           <nav className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
             <Link href="/series/lost-london" className="hover:text-white transition-colors">Articles</Link>
             <Link href="/map" className="hover:text-white transition-colors">Map</Link>
-            <Link href="/timeline" className="hover:text-white transition-colors">Timeline</Link>
             <Link href="/series" className="hover:text-white transition-colors">Series</Link>
             <Link href="/routes" className="hover:text-white transition-colors">Routes</Link>
             <Link href="/thorney-island" className="hover:text-white transition-colors">Book</Link>
