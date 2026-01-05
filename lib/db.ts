@@ -331,3 +331,48 @@ export async function getEraStats(): Promise<{ era: string; count: number }[]> {
     return []
   }
 }
+
+// Related topics - for VIC to suggest follow-up topics
+export interface RelatedTopic {
+  id: number
+  title: string
+  slug: string
+  similarity_score: number
+}
+
+export async function getRelatedTopics(articleId: number, limit = 3): Promise<RelatedTopic[]> {
+  try {
+    // Prioritize curated relationships, fallback to auto-generated
+    const topics = await sql`
+      SELECT a.id, a.title, a.slug, ar.similarity_score
+      FROM article_relationships ar
+      JOIN articles a ON ar.target_article_id = a.id
+      WHERE ar.source_article_id = ${articleId}
+      ORDER BY ar.is_curated DESC, ar.similarity_score DESC
+      LIMIT ${limit}
+    `
+    return topics as RelatedTopic[]
+  } catch (error) {
+    console.error('Related topics error:', error)
+    return []
+  }
+}
+
+// Get related topics by article slug (more convenient for tool usage)
+export async function getRelatedTopicsBySlug(slug: string, limit = 3): Promise<RelatedTopic[]> {
+  try {
+    const topics = await sql`
+      SELECT a2.id, a2.title, a2.slug, ar.similarity_score
+      FROM articles a1
+      JOIN article_relationships ar ON a1.id = ar.source_article_id
+      JOIN articles a2 ON ar.target_article_id = a2.id
+      WHERE a1.slug = ${slug}
+      ORDER BY ar.is_curated DESC, ar.similarity_score DESC
+      LIMIT ${limit}
+    `
+    return topics as RelatedTopic[]
+  } catch (error) {
+    console.error('Related topics by slug error:', error)
+    return []
+  }
+}

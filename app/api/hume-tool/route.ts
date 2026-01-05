@@ -46,6 +46,32 @@ async function getQueryEmbedding(text: string): Promise<number[]> {
   return data.data[0].embedding
 }
 
+// Get related topics for an article to suggest follow-up conversation
+async function getRelatedTopicsForArticle(articleId: number): Promise<string[]> {
+  try {
+    const topics = await sql`
+      SELECT a.title
+      FROM article_relationships ar
+      JOIN articles a ON ar.target_article_id = a.id
+      WHERE ar.source_article_id = ${articleId}
+      ORDER BY ar.is_curated DESC, ar.similarity_score DESC
+      LIMIT 3
+    `
+    return topics.map((t: any) => t.title)
+  } catch (error) {
+    console.error('[Hume Tool] getRelatedTopics error:', error)
+    return []
+  }
+}
+
+// Format related topics for natural speech
+function formatTopicSuggestions(topics: string[]): string {
+  if (topics.length === 0) return ''
+  if (topics.length === 1) return topics[0]
+  if (topics.length === 2) return `${topics[0]} or ${topics[1]}`
+  return `${topics[0]}, ${topics[1]}, or ${topics[2]}`
+}
+
 async function searchKnowledge(query: string): Promise<string> {
   const normalizedQuery = normalizeQuery(query)
   console.log(`[Hume Tool] search_knowledge: "${query}" → "${normalizedQuery}"`)
@@ -77,7 +103,7 @@ async function searchKnowledge(query: string): Promise<string> {
         FROM knowledge_chunks
       )
       SELECT
-        kc.title, kc.content, kc.source_type, kc.metadata,
+        kc.title, kc.content, kc.source_type, kc.metadata, kc.source_id,
         (COALESCE(vr.vector_score, 0) * 0.6) +
         (COALESCE(kr.keyword_score, 0) * 0.4) +
         COALESCE(kr.type_boost, 0) as score
@@ -107,6 +133,14 @@ async function searchKnowledge(query: string): Promise<string> {
       response += `RELATED ARTICLES:\n`
       for (let i = 1; i < Math.min(results.length, 4); i++) {
         response += `- ${results[i].title}\n`
+      }
+    }
+
+    // Get and add suggested follow-up topics for natural transitions
+    if (topResult.source_id && topResult.source_type === 'article') {
+      const relatedTopics = await getRelatedTopicsForArticle(topResult.source_id)
+      if (relatedTopics.length > 0) {
+        response += `\nSUGGESTED_TOPICS: When you've covered this, offer: "Would you like to hear about ${formatTopicSuggestions(relatedTopics)}?"\n`
       }
     }
 
