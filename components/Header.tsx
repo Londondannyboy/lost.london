@@ -44,6 +44,12 @@ export function Header() {
             {/* Auth - Sign In / User Menu */}
             {session?.user ? (
               <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/20 relative z-50 pointer-events-auto">
+                <Link
+                  href="/dashboard"
+                  className="px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  My Journey
+                </Link>
                 <button
                   onClick={async () => {
                     await authClient.signOut()
@@ -53,17 +59,19 @@ export function Header() {
                 >
                   Sign Out
                 </button>
-                {session.user.image ? (
-                  <img
-                    src={session.user.image}
-                    alt={session.user.name || 'User'}
-                    className="w-7 h-7 rounded-full cursor-pointer relative z-50"
-                  />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs cursor-pointer relative z-50">
-                    {session.user.name?.[0] || session.user.email?.[0] || 'U'}
-                  </div>
-                )}
+                <Link href="/dashboard" className="relative z-50">
+                  {session.user.image ? (
+                    <img
+                      src={session.user.image}
+                      alt={session.user.name || 'User'}
+                      className="w-7 h-7 rounded-full cursor-pointer hover:ring-2 hover:ring-white/50 transition-all"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs cursor-pointer hover:bg-white/30 transition-colors">
+                      {session.user.name?.[0] || session.user.email?.[0] || 'U'}
+                    </div>
+                  )}
+                </Link>
               </div>
             ) : (
               <div className="flex items-center gap-1 ml-2 pl-2 border-l border-white/20">
@@ -124,6 +132,13 @@ export function Header() {
               <div className="border-t border-white/20 mt-2 pt-2">
                 {session?.user ? (
                   <>
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-3 text-base text-white bg-white/5 hover:bg-white/10"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      My Journey
+                    </Link>
                     <div className="px-4 py-3 flex items-center justify-between">
                       <span className="text-sm text-gray-300">{session.user.email}</span>
                       <button
