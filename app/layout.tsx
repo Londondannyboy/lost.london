@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { authClient } from '@/lib/auth/client'
 import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui'
+import { CopilotProvider } from '@/components/CopilotProvider'
 import { BetaBadge } from '@/components/BetaBadge'
 import { ConsentBanner } from '@/components/ConsentBanner'
 import { LogoBadge } from '@/components/LogoBadge'
@@ -41,15 +42,17 @@ export default function RootLayout({
           redirectTo="/"
           social={{ providers: ['google', 'github'] }}
         >
-          <LogoBadge />
-          <BetaBadge />
-          <Header />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-          <BuyBookBanner />
-          <ConsentBanner />
+          <CopilotProvider>
+            <LogoBadge />
+            <BetaBadge />
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+            <BuyBookBanner />
+            <ConsentBanner />
+          </CopilotProvider>
         </NeonAuthUIProvider>
       </body>
     </html>
